@@ -11,6 +11,7 @@
 class Game {
 public:
     Game();
+    void loadFonts(const std::string& fontPath);
     void run();
     void processEvents();
     void update();
@@ -19,6 +20,7 @@ public:
     void showStore();
     void showPayment();
 	std::string getStoreCreditString() const;
+	void randomCustomer();
 
 private:
     sf::RenderWindow window;

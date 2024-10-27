@@ -4,7 +4,7 @@
 #include <sstream>
 
 UIManager::UIManager() {
-	text.setCharacterSize(24);
+	text.setCharacterSize(30);
 	text.setFillColor(sf::Color::White);
 }
 
@@ -16,8 +16,8 @@ void UIManager::loadFont(const std::string& fontPath) {
 }
 
 void UIManager::updateText(GroceryStore& groceryStore, Inventory inventory,
-	bool includeHeader, bool includeFooter, bool includePrice, bool includeButton) {
-	text.setString(generateInventoryString(inventory, includeHeader, includeFooter, includePrice, includeButton));
+	bool includeHeader, bool includeFooter, bool includePrice, bool includeButton, bool storePrice, bool paymentButton) {
+	text.setString(generateInventoryString(groceryStore, inventory, includeHeader, includeFooter, includePrice, includeButton, storePrice, paymentButton));
 
 	if (includeButton) {
 		createProductButtons(groceryStore, inventory);
@@ -31,7 +31,7 @@ void UIManager::render(sf::RenderWindow& window) {
 	// Render all buttons
 	for (auto& button : productButtons) {
 		button.render(window);
-	}
+	}	
 }
 
 void UIManager::setPos(float x, float y) {
@@ -47,7 +47,7 @@ void UIManager::handleClick(const sf::Vector2i& mousePos) {
 	// Check if any product button was clicked
 	for (auto& button : productButtons) {
 		if (button.isClicked(mousePos)) {
-			//std::cout << "Button clicked!\n";
+			std::cout << "Button clicked!\n";
 			button.handleClick();  // Trigger button's callback
 		}
 	}
@@ -56,7 +56,7 @@ void UIManager::handleClick(const sf::Vector2i& mousePos) {
 void UIManager::createProductButtons(GroceryStore& groceryStore, Inventory& inventory) {
 	productButtons.clear();  // Clear previous buttons
 
-	float buttonY = position.y;  // Initial Y position for buttons
+	float buttonY = position.y + 7.5f;  // Initial Y position for buttons
 
 	for (size_t i = 0; i < inventory.getProducts().size(); ++i) {
 		std::string productName = inventory.getProducts()[i].getName();  // Capture by value
@@ -64,7 +64,7 @@ void UIManager::createProductButtons(GroceryStore& groceryStore, Inventory& inve
 		Button button(
 			"Add Stock",
 			sf::Vector2f(position.x + 300, buttonY),
-			sf::Vector2f(60, 40),
+			sf::Vector2f(25, 25),
 			[&groceryStore, productName]() {  // Capture by reference
 				groceryStore.buyStocks(productName);  // Modify stock
 				//std::cout << "Added stock for product: " << productName << std::endl;
@@ -72,12 +72,27 @@ void UIManager::createProductButtons(GroceryStore& groceryStore, Inventory& inve
 		);
 
 		productButtons.push_back(button);
-		buttonY += 50;  // Update Y position for the next button
+		buttonY += 35;  // Update Y position for the next button
 	}
 }
 
+void UIManager::createPaymentButton(GroceryStore& groceryStore)
+{
+	productButtons.clear();  // Clear previous buttons
+	Button button(
+		"Receive Payment",
+		sf::Vector2f(position.x + 300.f, position.y + 300.f),
+		sf::Vector2f(25, 25),
+		[&groceryStore]() {  // Capture by reference
+			groceryStore.receivePayment();  // Modify stock
+			//std::cout << "Added stock for product: " << productName << std::endl;
+		}
+	);
+	productButtons.push_back(button);
+}
 
-std::string UIManager::generateInventoryString(const Inventory& inventory, bool includeHeader, bool includeFooter, bool includePrice, bool includeButton) {
+
+std::string UIManager::generateInventoryString(GroceryStore& groceryStore, const Inventory& inventory, bool includeHeader, bool includeFooter, bool includePrice, bool includeButton, bool storePrice, bool paymentButton) {
 	std::ostringstream oss;  // Use string stream to control the formatting
 
 	if (includeHeader) {
@@ -89,20 +104,26 @@ std::string UIManager::generateInventoryString(const Inventory& inventory, bool 
 			<< product.getQuantity();
 
 		if (includePrice) {
-			oss << "| |$" << std::fixed << std::setprecision(2)
-				<< product.getPrice() * product.getQuantity();  // Ensure 2 decimal places
-		}
-
-		if (includeButton) {
-
+			oss << "| |$" << std::fixed << std::setprecision(2);
+			if (storePrice)
+			{
+				oss << product.getPrice() * 1.1 * product.getQuantity();  // Ensure 2 decimal places
+			}
+			else
+			{
+				oss << product.getPrice() * product.getQuantity();  // Ensure 2 decimal places
+			}
 		}
 
 		oss << "\n";  // Newline after each product entry
 	}
 
 	if (includeFooter) {
-		oss << "Total: " << std::fixed << std::setprecision(2)
-			<< inventory.getTotalPrice() << "\n";  // Ensure 2 decimal places
+		oss << "Total: $" << std::fixed << std::setprecision(2)
+			<< inventory.getTotalPrice(true) << "\n";  // Ensure 2 decimal places
+		if (paymentButton) {
+			createPaymentButton(groceryStore);
+		}
 	}
 
 	std::string inventoryText = oss.str();

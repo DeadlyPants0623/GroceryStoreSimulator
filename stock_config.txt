@@ -1,2 +1,5 @@
-Apple 1.0 10
-Banana 2.0 20
+Apple 1.5 10
+Banana 0.90 20
+Carrot 1.5 30
+Corn 2.0 40
+Grape 4.0 50
