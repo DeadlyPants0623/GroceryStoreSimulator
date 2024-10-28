@@ -76,7 +76,7 @@ void Game::update() {
         paymentUI.updateText(groceryStore, groceryStore.getCheckOutInventory(), true, true, true, false, true, true);
     }
     storeCreditUI.setText(getStoreCreditString());
-    storeCreditUI.setPos(1700, 0);
+    storeCreditUI.setPos(1600, 0);
 }
 
 void Game::render() {
