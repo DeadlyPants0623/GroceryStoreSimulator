@@ -1,25 +1,42 @@
-#ifndef UIMANAGER_H
-#define UIMANAGER_H
-
 #include <SFML/Graphics.hpp>
 #include <string>
 #include "Inventory.h"
 #include "GroceryStore.h"
 #include "Button.h"
 
+enum class UpdateOptions : uint8_t {
+    None = 0,      // Default, no flags
+    IncludeHeader = 1 << 0, // 0000 0001
+    IncludeFooter = 1 << 1, // 0000 0010
+    IncludePrice = 1 << 2, // 0000 0100
+    IncludeButton = 1 << 3, // 0000 1000
+    StorePrice = 1 << 4, // 0001 0000
+    PaymentButton = 1 << 5  // 0010 0000
+};
+
+// Enable bitwise operators for the enum
+inline UpdateOptions operator|(UpdateOptions a, UpdateOptions b) {
+    return static_cast<UpdateOptions>(static_cast<uint8_t>(a) | static_cast<uint8_t>(b));
+}
+
+inline bool hasFlag(UpdateOptions value, UpdateOptions flag) {
+    return (static_cast<uint8_t>(value) & static_cast<uint8_t>(flag)) != 0;
+}
+
 class UIManager {
 public:
     UIManager();
     void loadFont(const std::string& fontPath);
-    void updateText(GroceryStore& groceryStore, Inventory inventory, bool includeHeader, bool includeFooter, bool includePrice, bool includeButton, bool storePrice, bool paymentButton);
+    void updateText(GroceryStore& groceryStore, const Inventory& inventory, UpdateOptions options);
     void render(sf::RenderWindow& window);
     void setPos(float x, float y);
 	void setText(const std::string& text);
     void handleClick(const sf::Vector2i& mousePos);
 
-    void createProductButtons(GroceryStore& groceryStore, Inventory& inventory);
+    void createProductButtons(GroceryStore& groceryStore, const Inventory& inventory);
 	void createPaymentButton(GroceryStore& groceryStore);
 
+    bool isPayButtonClicked(const sf::Vector2i& mousePos) const;
 
 private:
     sf::Font font;
@@ -29,4 +46,3 @@ private:
     std::string generateInventoryString(GroceryStore& groceryStore, const Inventory& inventory, bool includeHeader, bool includeFooter, bool includePrice = false, bool includeButton = false, bool storePrice = false, bool payemntButton = false);
 };
 
-#endif

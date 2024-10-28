@@ -2,7 +2,7 @@
 #include <iostream>
 
 void Inventory::addProduct(const Product& product, int quantity) {
-	std::cout << "Adding product: " << product.getName() << std::endl;
+	//std::cout << "Adding product: " << product.getName() << std::endl;
 	for (auto& p : products) {
 		if (p.getName() == product.getName()) {
 			p.addQuantity(quantity);
@@ -22,7 +22,7 @@ bool Inventory::removeProduct(const std::string& productName, int quantity) {
 				return true;
 			}
 			else {
-				std::cout << "Not enough quantity of " << productName << " in stock." << std::endl;
+				//std::cout << "Not enough quantity of " << productName << " in stock." << std::endl;
 				return false;
 			}
 		}
@@ -43,26 +43,18 @@ void Inventory::display() const {
 	}
 }
 
-float Inventory::getTotalPrice(bool storePrice) const
-{
-	float localTotalPrice = 0;
-	if (storePrice)
-	{
-		for (const auto& product : products)
-		{
-			localTotalPrice += product.getPrice() * 1.1 * product.getQuantity();
-		}
-		return localTotalPrice;
-	}
-	else
-	{
-		for (const auto& product : products)
-		{
-			localTotalPrice += product.getPrice() * product.getQuantity();
-		}
-		return localTotalPrice;
-	}
+float Inventory::calculateTotalPrice(const Product& product, bool storePrice) const {
+	return product.getPrice() * product.getQuantity() * (storePrice ? 1.1f : 1.0f);
 }
+
+float Inventory::getTotalPrice(bool storePrice) const {
+	float totalPrice = 0.0f;
+	for (const auto& product : products) {
+		totalPrice += calculateTotalPrice(product, storePrice);
+	}
+	return totalPrice;
+}
+
 
 const std::vector<Product>& Inventory::getProducts() const {
 	return products;

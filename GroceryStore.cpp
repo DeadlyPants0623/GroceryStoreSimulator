@@ -8,7 +8,7 @@ void GroceryStore::buyStocks(const std::string& productName) {
     const auto& products = stockManager.getInventory().getProducts();
     for (const auto& product : products) {
         if (product.getName() == productName) {
-            std::cout << "Buying stock: " << productName << std::endl;
+            //std::cout << "Buying stock: " << productName << std::endl;
 			localPrice = product.getPrice() * product.getQuantity();
 			if (storeCredit >= localPrice) {
 				storeCredit -= localPrice;
@@ -16,7 +16,7 @@ void GroceryStore::buyStocks(const std::string& productName) {
 				return;
 			}
 			else {
-				std::cout << "Insufficient store credit to buy stock: " << productName << std::endl;
+				//std::cout << "Insufficient store credit to buy stock: " << productName << std::endl;
 				return;
 			}
         }
@@ -40,8 +40,8 @@ void GroceryStore::receivePayment()
 {
 	for (const auto& product : checkOut.getProducts())
 	{
-		std::cout << "Receiving payment for: " << product.getName() << std::endl;
-		storeCredit += product.getPrice() * 1.1 * product.getQuantity();
+		//std::cout << "Receiving payment for: " << product.getName() << std::endl;
+		storeCredit += product.getPrice() * 1.1f * product.getQuantity();
 		checkOut.clear();
 	}
 }

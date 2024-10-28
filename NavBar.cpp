@@ -2,7 +2,7 @@
 #include <stdexcept>
 
 NavBar::NavBar() : buttonWidth(100), buttonHeight(40), spacing(10) {
-    if (!font.loadFromFile("arcade_classic.ttf")) {
+    if (!font.loadFromFile("pixel.ttf")) {
         throw std::runtime_error("Failed to load font.");
     }
 }

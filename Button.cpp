@@ -1,6 +1,6 @@
 #include "Button.h"
 
-Button::Button(const std::string& label, const sf::Vector2f& position, const sf::Vector2f& size, std::function<void()> callback)
+Button::Button(const std::string& inLabel, const sf::Vector2f& position, const sf::Vector2f& size, std::function<void()> callback)
     : callback(callback) {
     shape.setSize(size);
     shape.setPosition(position);
@@ -10,6 +10,7 @@ Button::Button(const std::string& label, const sf::Vector2f& position, const sf:
     text.setFillColor(sf::Color::White);
     text.setCharacterSize(20);  // Default size; can be adjusted later
     text.setPosition(position.x + 10, position.y + 5);  // Center the text slightly
+	label = inLabel;
 }
 
 void Button::setFont(const sf::Font& font) {
@@ -27,4 +28,8 @@ bool Button::isClicked(const sf::Vector2i& mousePos) const {
 
 void Button::handleClick() {
     callback();  // Execute the button's action
+}
+
+std::string Button::getLabel() const {
+    return label;
 }

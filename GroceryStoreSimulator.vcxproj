@@ -135,6 +135,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Animation.cpp" />
     <ClCompile Include="Button.cpp" />
     <ClCompile Include="Customer.cpp" />
     <ClCompile Include="Game.cpp" />
@@ -150,6 +151,7 @@
     <Text Include="stock_config.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Animation.h" />
     <ClInclude Include="Button.h" />
     <ClInclude Include="Customer.h" />
     <ClInclude Include="Game.h" />
