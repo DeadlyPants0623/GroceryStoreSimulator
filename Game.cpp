@@ -22,6 +22,9 @@ Game::Game()
 	: window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "Grocery Store Game"),
 	groceryStore(stocks), showStockInfo(false), showStoreInfo(false), showPaymentInfo(false) {
 
+	srand(static_cast<unsigned int>(time(0)));
+	cashierPosition = { 48.0f, WINDOW_HEIGHT - 30.f };
+
 	stocks.loadConfig("stock_config.txt");
 	groceryStore.buyStocks("Apple");
 	groceryStore.buyStocks("Banana");
@@ -33,14 +36,14 @@ Game::Game()
 	navBar.addButton("Store", [this]() { showStore(); });
 	navBar.addButton("Payment", [this]() { showPayment(); });
 
+	initializeQueuePositions();
+
 	loadFonts("pixel.ttf");
-	setupQueuePositions();
-	randomCustomer();
-	randomCustomer();
-	randomCustomer();
-	randomCustomer();
-	randomCustomer();
-	randomCustomer();
+	//randomCustomer();
+	//randomCustomer();
+	//randomCustomer();
+	//randomCustomer();
+	//randomCustomer();
 }
 
 void Game::loadFonts(const std::string& fontPath) {
@@ -71,9 +74,13 @@ void Game::processEvents() {
 			stockUI.handleClick(mousePos);
 			paymentUI.handleClick(mousePos);
 
-			// Check if the "Pay" button was clicked
 			if (paymentUI.isPayButtonClicked(mousePos)) {
-				handlePayment();  // Process payment manually
+				afterPayment();
+			}
+		}
+		else if (event.type == sf::Event::KeyPressed) {
+			if (event.key.code == sf::Keyboard::Space) {
+				randomCustomer();
 			}
 		}
 	}
@@ -90,10 +97,64 @@ void Game::update(float deltaTime) {
 		paymentUI.updateText(groceryStore, groceryStore.getCheckOutInventory(), UpdateOptions::IncludeHeader | UpdateOptions::IncludeFooter | UpdateOptions::StorePrice | UpdateOptions::PaymentButton);
 	}
 	storeCreditUI.setText(getStoreCreditString());
-	storeCreditUI.setPos(1600, 0);
+	storeCreditUI.setPos(WINDOW_WIDTH - 400.f, 0);
 
 	for (auto& customer : customers) {
 		customer->update(deltaTime);
+		switch (customer->getCustomerState()) {
+		case CustomerState::WalkingToQueue: {
+			if (customer->hasReachedQueue()) {
+				customer->setCustomerState(CustomerState::IdleInQueue);
+			}
+			break;
+		}
+		case CustomerState::IdleInQueue: {
+			if (isCashierAvailable()) {
+				std::cout << "Cashier is available." << std::endl;
+				processCustomerQueue();
+			}
+			break;
+		}
+		case CustomerState::WalkingToCashier: {
+			if (customer->hasReachedCashier()) {
+				currentCustomer = customer;
+				customer->setCustomerState(CustomerState::SendToCart);
+			}
+			break;
+		}
+		case CustomerState::SendToCart: {
+			srand(static_cast<unsigned int>(time(0)));
+			int randomStock = rand() % 5;
+			int randomQuantity = rand() % 5 + 1;
+			customer->buyProduct(stockNames[randomStock], stockPrices[randomStock], randomQuantity, groceryStore.getInventory());
+			customer->sendToCart(groceryStore);
+			customer->setCustomerState(CustomerState::Idle);
+			break;
+		}
+		case CustomerState::Leaving: {
+			if (customer->getCustomerState() == CustomerState::Leaving && customer->hasReachedLeave()) {
+				customer->markForRemoval();
+			}
+			break;
+		}
+		}
+	}
+	// After the loop, remove the marked customers
+	customers.erase(
+		std::remove_if(customers.begin(), customers.end(),
+			[](const std::shared_ptr<Customer>& c) { return c->isMarkedForRemoval(); }),
+		customers.end());
+
+	spawnTimer += deltaTime;
+	if (spawnTimer >= spawnInterval)
+	{
+		int randomChance = rand() % 100;
+		if (randomChance <= 50) {
+			if (customerQueue.size() < 10) {
+				randomCustomer();
+			}
+		}
+		spawnTimer = 0;
 	}
 }
 
@@ -148,116 +209,81 @@ std::string Game::getStoreCreditString() const {
 }
 
 void Game::randomCustomer() {
-	auto customer = std::make_shared<Customer>("Customer " + std::to_string(customers.size() + 1));
-
-	// Start the customer off-screen at the right edge
-	customer->setPosition(sf::Vector2f(WINDOW_WIDTH - 48, WINDOW_HEIGHT - 30));
-
-	// Assign the next available queue position
-	if (nextQueueIndex < queuePositions.size()) {
-		sf::Vector2f targetPosition = queuePositions[nextQueueIndex++];
-		std::cout << customer->getName() << " is assigned to queue position " << (nextQueueIndex - 1) << std::endl;
-
-		// Move the customer to their assigned queue position
-		customer->moveTo(targetPosition, 2.0f, [this, customer]() {
-			std::cout << customer->getName() << " arrived at queue position." << std::endl;
-			customerQueue.push(customer);  // Add to the queue
-
-			// Start processing the queue if this is the first customer
-			if (customerQueue.size() == 1) {
-				processQueue();
-			}
-			});
-	}
-	else {
-		std::cerr << "No available queue positions left!" << std::endl;
-	}
-
-	customers.push_back(customer);  // Keep track of the customer
-}
-
-void Game::processQueue() {
-    if (isProcessing || customerQueue.empty()) {
-        return;  // Don't proceed if a payment is in progress or queue is empty
-    }
-
-    isProcessing = true;  // Set the flag indicating a customer is being processed
-
-    currentCustomer = customerQueue.front();  // Get the first customer in the queue
-    std::cout << currentCustomer->getName() << " is moving to the cashier." << std::endl;
-
-    // Move the customer to the cashier position
-    currentCustomer->moveTo(cashierPosition, 1.0f, [this]() {
-        std::cout << currentCustomer->getName() << " arrived at the cashier." << std::endl;
-
-        // Customer buys products and sends them to the cart upon arrival
-        int randomNum = rand() % stockNames.size();
-        int randomAmount = rand() % 10 + 1;
-
-        currentCustomer->buyProduct(stockNames[randomNum], stockPrices[randomNum], randomAmount, groceryStore.getInventory());
-        std::cout << currentCustomer->getName() << " bought " << randomAmount << " of " << stockNames[randomNum] << "." << std::endl;
-
-        currentCustomer->sendToCart(groceryStore);
-        std::cout << currentCustomer->getName() << " sent products to the cart." << std::endl;
-
-        // Now wait for the "Pay" button to be clicked
-        isProcessing = false;  // Allow the payment to proceed
-    });
-}
-
-
-void Game::setupQueuePositions() {
-	int startX = 100;  // Starting X position of the queue
-	int startY = WINDOW_HEIGHT - 30;  // Aligned horizontally
-
-	// Create 10 queue positions spaced 60 pixels apart
-	for (int i = 0; i < 10; ++i) {
-		queuePositions.emplace_back(sf::Vector2f(startX + i * 60, startY));
-	}
-}
-
-void Game::handlePayment() {
-	if (!currentCustomer) {
-		std::cout << "No customer at the cashier to pay." << std::endl;
+	if (customerQueue.size() >= 9) {
+		std::cout << "Queue is full." << std::endl;
 		return;
 	}
 
-	std::cout << "Processing payment for " << currentCustomer->getName() << std::endl;
+	auto customer = std::make_shared<Customer>("Customer " + std::to_string(customers.size() + 1));
+	std::cout << "Customer " << customers.size() << " has been added." << std::endl;
 
-	// Simulate payment logic
-	std::cout << currentCustomer->getName() << " has completed payment." << std::endl;
+	customers.push_back(customer);
+	customerQueue.push_back(customer);  // Store shared pointer
 
-	// Remove the current customer from the queue
-	customerQueue.pop();
-	std::cout << currentCustomer->getName() << " has finished and left the queue." << std::endl;
-
-	// Clear the current customer and reset the processing flag
-	currentCustomer = nullptr;
-	isProcessing = false;
-
-	// Shift the remaining customers forward in the queue
-	shiftQueueForward();
-
-	// Start processing the next customer if available
-	if (!customerQueue.empty()) {
-		processQueue();
+	for (int i = 0; i < customerQueue.size(); ++i) {
+		if (customerQueue[i]->getName() == customer->getName())
+		{
+			std::cout << customer->getName() << " has entered the store." << std::endl;
+			customer->setPosition(sf::Vector2f(WINDOW_WIDTH, WINDOW_HEIGHT - 30));
+			customer->setTargetQueuePosition(queuePositions[i]);
+			customer->moveTo(queuePositions[i]);
+			customer->setCustomerState(CustomerState::WalkingToQueue);
+		}
 	}
 }
 
-void Game::shiftQueueForward() {
-	if (customerQueue.empty()) return;  // Nothing to shift if the queue is empty
+void Game::afterPayment()
+{
+	if (currentCustomer) {
+		std::cout << "Payment received." << std::endl;
+		currentCustomer->setTargetLeavePosition({ 0, WINDOW_HEIGHT - 30.f });
+		currentCustomer->moveTo({ 0, WINDOW_HEIGHT - 30.f });
+		leavingCustomer = currentCustomer;
+		currentCustomer->setCustomerState(CustomerState::Leaving);
+		currentCustomer = nullptr;
+		customerGoingToCashier = nullptr;
+	}
+	else {
+		std::cout << "No payment received." << std::endl;
+	}
+}
 
-	std::queue<std::shared_ptr<Customer>> tempQueue = customerQueue;  // Copy the queue
-	int index = 0;
+void Game::initializeQueuePositions()
+{
+	for (int i = 0; i < 10; ++i) {
+		queuePositions.push_back({ 150.f + i * 48.f, WINDOW_HEIGHT - 30.f });
+	}
+}
 
-	// Iterate over the temporary queue and move each customer to the correct position
-	while (!tempQueue.empty() && index < queuePositions.size()) {
-		auto customer = tempQueue.front();
-		tempQueue.pop();  // Remove the processed customer from the temp queue
+bool Game::isCashierAvailable() const
+{
+	if (!customerGoingToCashier) {
+		return true;
+	}
+	return false;
+}
 
-		sf::Vector2f targetPosition = queuePositions[index++];
-		customer->moveTo(targetPosition, 1.0f, []() {
-			std::cout << "Customer shifted forward in the queue." << std::endl;
-			});
+void Game::processCustomerQueue()
+{
+	if (customerQueue.empty()) {
+		std::cout << "No customers in queue." << std::endl;
+		return;
+	}
+	std::cout << "Processing customer queue." << std::endl;
+	auto customer = customerQueue.front();
+	customerQueue.erase(customerQueue.begin());
+	customerGoingToCashier = customer;
+	customer->setCustomerState(CustomerState::WalkingToCashier);
+	customer->setTargetCashierPosition(cashierPosition);
+	customer->moveTo(cashierPosition);
+	shiftCustomerQueuePosition();
+}
+
+void Game::shiftCustomerQueuePosition()
+{
+	for (int i = 0; i < customerQueue.size(); ++i) {
+		customerQueue[i]->setTargetQueuePosition(queuePositions[i]);
+		customerQueue[i]->moveTo(queuePositions[i]);
+		customerQueue[i]->setCustomerState(CustomerState::WalkingToQueue);
 	}
 }

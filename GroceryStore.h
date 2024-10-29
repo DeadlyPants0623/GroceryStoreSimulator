@@ -1,6 +1,4 @@
-#ifndef GROCERYSTORE_H
-#define GROCERYSTORE_H
-
+#pragma once
 #include "Product.h"
 #include "Stocks.h"
 
@@ -23,5 +21,3 @@ private:
     Inventory inventory;
     const Stocks& stockManager;
 };
-
-#endif

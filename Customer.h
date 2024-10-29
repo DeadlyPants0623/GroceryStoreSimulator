@@ -2,45 +2,62 @@
 #include "GroceryStore.h"
 #include <string>
 #include "Animation.h"
-#include <functional>
 
-class Customer : public std::enable_shared_from_this<Customer> {
+enum class CustomerState {
+    Idle,
+    WalkingToQueue,
+	IdleInQueue,
+	WalkingToCashier,
+	SendToCart,
+	Leaving
+};
+
+class Customer {
 public:
     Customer(const std::string& name);
 	~Customer();
 
     std::string getName() const;
+
+    void update(float deltaTime);  // Update the active animation
+    void render(sf::RenderWindow& window);  // Render the active animation
+
     void buyProduct(const std::string& productName, float productPrice, int quantity, Inventory& storeInventory);
     void displayInventory() const;
     void sendToCart(GroceryStore& groceryStore) const;
 
     void setPosition(const sf::Vector2f& pos);
+	void setTargetCashierPosition(const sf::Vector2f& pos);
+	void setTargetQueuePosition(const sf::Vector2f& pos);
+	void setTargetLeavePosition(const sf::Vector2f& pos);
     sf::Vector2f getPosition() const;
-    void moveTo(const sf::Vector2f& target, float duration, std::function<void()> onArrival);
-    void exitAndDestroy(std::function<void(std::shared_ptr<Customer>)> onDestroyCallback);
-    void setWalking(bool walking);  // Switch between idle and walk animations
-    void update(float deltaTime);  // Update the active animation
-    void render(sf::RenderWindow& window);  // Render the active animation
+    void moveTo(const sf::Vector2f& target);
+	void updateMovement(float deltaTime);
+	void setCustomerState(CustomerState state);
+	CustomerState getCustomerState();
+    bool hasReachedCashier();
+    bool hasReachedQueue();
+	bool hasReachedLeave();
+    bool isMarkedForRemoval() const { return markedForRemoval; }
+    void markForRemoval() { markedForRemoval = true; }
 
-    bool isActive();
-    void markForDestruction();  // New method to mark the customer for removal
 
 private:
     std::string name;
     Inventory inventory;
     Animation idleAnimation;
     Animation walkAnimation;
-    bool isWalking = false;  // Current state of the customer
-	bool destroyed = false;  // Flag to mark the customer for removal
 
     // Movement variables
     sf::Vector2f startPos;
     sf::Vector2f targetPos;
-    float totalDuration = 0.0f;  // Total time for the movement
-    float elapsedTime = 0.0f;    // Elapsed time since movement started
-    bool moving = false;         // Whether the customer is currently moving
-
-    std::function<void()> onArrivalCallback;  // Callback for arrival event
+	sf::Vector2f targetCashierPos;
+	sf::Vector2f targetQueuePos;
+	sf::Vector2f targetLeavePos;
+    sf::Vector2f currentPos;
+	float movementSpeed = 100.0f;
+	CustomerState state;
+    bool markedForRemoval = false;
 
 	void loadRandomAnimations();
 };

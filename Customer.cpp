@@ -4,26 +4,76 @@
 #include <functional>
 
 Customer::Customer(const std::string& name)
-    : name(name),
-    idleAnimation(0.2f),  // 0.2s per frame for idle animation
-    walkAnimation(0.1f)   // 0.1s per frame for walk animation
+	: name(name),
+	idleAnimation(0.2f),  // 0.2s per frame for idle animation
+	walkAnimation(0.1f)   // 0.1s per frame for walk animation
 {
 	loadRandomAnimations();
 }
 
 std::string Customer::getName() const { return name; }
 
+void Customer::update(float deltaTime) {
+	updateMovement(deltaTime);
+
+	switch (state) {
+	case CustomerState::Idle:
+		idleAnimation.update(deltaTime);
+		break;
+	case CustomerState::WalkingToQueue:
+		walkAnimation.update(deltaTime);
+		break;
+	case CustomerState::IdleInQueue:
+		idleAnimation.update(deltaTime);
+		break;
+	case CustomerState::WalkingToCashier:
+		walkAnimation.update(deltaTime);
+		break;
+	case CustomerState::SendToCart:
+		break;
+	case CustomerState::Leaving:
+		walkAnimation.update(deltaTime);
+		break;
+	default:
+		break;
+	}
+}
+
+void Customer::render(sf::RenderWindow& window) {
+	switch (state) {
+	case CustomerState::Idle:
+		idleAnimation.render(window);
+		break;
+	case CustomerState::WalkingToQueue:
+		walkAnimation.render(window);
+		break;
+	case CustomerState::IdleInQueue:
+		idleAnimation.render(window);
+		break;
+	case CustomerState::WalkingToCashier:
+		walkAnimation.render(window);
+		break;
+	case CustomerState::SendToCart:
+		break;
+	case CustomerState::Leaving:
+		walkAnimation.render(window);
+		break;
+	default:
+		break;
+	}
+}
+
 void Customer::buyProduct(const std::string& productName, float productPrice, int quantity, Inventory& storeInventory) {
-    if (storeInventory.removeProduct(productName, quantity)) {
-        std::cout << name << " bought " << quantity << " of " << productName << std::endl;
-        Product product(productName, productPrice);
-        inventory.addProduct(product, quantity);
-    }
+	if (storeInventory.removeProduct(productName, quantity)) {
+		std::cout << name << " bought " << quantity << " of " << productName << std::endl;
+		Product product(productName, productPrice);
+		inventory.addProduct(product, quantity);
+	}
 }
 
 void Customer::displayInventory() const {
-    //std::cout << name << "'s Inventory:" << std::endl;
-    inventory.display();
+	//std::cout << name << "'s Inventory:" << std::endl;
+	inventory.display();
 }
 
 void Customer::sendToCart(GroceryStore& groceryStore) const
@@ -32,144 +82,165 @@ void Customer::sendToCart(GroceryStore& groceryStore) const
 }
 
 void Customer::setPosition(const sf::Vector2f& pos) {
-    startPos = targetPos = pos;
-    idleAnimation.setPosition(pos);
-    walkAnimation.setPosition(pos);
+	startPos = targetPos = pos;
+	idleAnimation.setPosition(pos);
+	walkAnimation.setPosition(pos);
+}
+
+void Customer::setTargetCashierPosition(const sf::Vector2f& pos)
+{
+	targetCashierPos = pos;
+}
+
+void Customer::setTargetQueuePosition(const sf::Vector2f& pos)
+{
+	targetQueuePos = pos;
+}
+
+void Customer::setTargetLeavePosition(const sf::Vector2f& pos)
+{
+	targetLeavePos = pos;
 }
 
 sf::Vector2f Customer::getPosition() const {
-    return idleAnimation.getPosition();
+	return idleAnimation.getPosition();
 }
 
-void Customer::moveTo(const sf::Vector2f& target, float duration, std::function<void()> onArrival) {
-    startPos = idleAnimation.getPosition();  // Get current position
-    targetPos = target;
-    totalDuration = duration;
-    elapsedTime = 0.0f;
-    moving = true;
-    setWalking(true);  // Start walking animation
-    onArrivalCallback = onArrival;  // Store the callback
+void Customer::moveTo(const sf::Vector2f& target) {
+	std::cout << name << " is moving to " << target.x << ", " << target.y << std::endl;
+	startPos = currentPos = idleAnimation.getPosition();  // Get current position
+	targetPos = target;
 }
 
-void Customer::exitAndDestroy(std::function<void(std::shared_ptr<Customer>)> onDestroyCallback) {
-    // Stop animations before exiting
-    idleAnimation.stop();
-    walkAnimation.stop();
+void Customer::updateMovement(float deltaTime) {
+	// Calculate the direction vector
+	sf::Vector2f direction = targetPos - currentPos;
+	float distance = std::sqrt(direction.x * direction.x + direction.y * direction.y);
 
-    markForDestruction();  // Mark the customer as destroyed
+	// Normalize the direction vector
+	if (distance != 0) {
+		direction /= distance;
+	}
 
-    sf::Vector2f offScreenPosition(0, getPosition().y);
+	// Calculate the distance to move this frame
+	float moveDistance = movementSpeed * deltaTime;
 
-    moveTo(offScreenPosition, 2.0f, [this, onDestroyCallback]() {
-        std::cout << name << " has exited the store and will be destroyed." << std::endl;
+	// Check if we reached the target or will reach it in this frame
+	if (moveDistance >= distance) {
+		currentPos = targetPos;  // Snap to target
+	}
+	else {
+		// Move in the direction of the target
+		currentPos += direction * moveDistance;
+	}
 
-        // Call the destruction callback to remove the customer from the game
-        onDestroyCallback(shared_from_this());
-        });
+	// Update animation position
+	idleAnimation.setPosition(currentPos);
+	walkAnimation.setPosition(currentPos);
 }
 
+void Customer::setCustomerState(CustomerState state)
+{
+	this->state = state;
 
-void Customer::setWalking(bool walking) {
-    if (isWalking != walking) {
-        isWalking = walking;
-
-        // Reset animation to the first frame when switching states
-        if (isWalking) walkAnimation.reset();
-        else idleAnimation.reset();
-    }
+	switch (state) {
+	case CustomerState::Idle:
+		idleAnimation.reset();
+		break;
+	case CustomerState::WalkingToQueue:
+		walkAnimation.reset();
+		break;
+	case CustomerState::IdleInQueue:
+		idleAnimation.reset();
+		break;
+	case CustomerState::WalkingToCashier:
+		walkAnimation.reset();
+		break;
+	case CustomerState::SendToCart:
+		break;
+	case CustomerState::Leaving:
+		walkAnimation.reset();
+		break;
+	default:
+		break;
+	}
 }
 
-void Customer::update(float deltaTime) {
-    if (!moving) return;  // Skip update if the customer is not active
-
-    elapsedTime += deltaTime;
-    float progress = elapsedTime / totalDuration;
-
-    if (progress >= 1.0f) {
-        progress = 1.0f;
-        moving = false;
-        setWalking(false);  // Stop walking animation
-
-        // Call the on-arrival callback if it exists
-        if (onArrivalCallback) {
-            std::cout << "Calling on-arrival callback" << std::endl;
-            onArrivalCallback();
-        }
-    }
-
-    // Interpolate between start and target positions
-    sf::Vector2f newPos = startPos + (targetPos - startPos) * progress;
-    idleAnimation.setPosition(newPos);
-    walkAnimation.setPosition(newPos);
-
-    if (isWalking) {
-        walkAnimation.update(deltaTime);
-    }
-    else {
-        idleAnimation.update(deltaTime);
-    }
-}
-
-void Customer::render(sf::RenderWindow& window) {
-    if (isWalking) {
-        walkAnimation.render(window);
-    }
-    else {
-        idleAnimation.render(window);
-    }
-}
-
-bool Customer::isActive() {
-    return !destroyed;  // Only active if not marked for destruction
-}
-
-void Customer::markForDestruction() {
-    destroyed = true;  // Mark the customer as destroyed
+CustomerState Customer::getCustomerState()
+{
+	return state;
 }
 
 void Customer::loadRandomAnimations()
 {
-    std::random_device rd;     // Random seed
-    std::mt19937 rng(rd());    // Mersenne Twister RNG
-    std::uniform_int_distribution<int> dist(1, 2);  // Random number from 1 to 2
+	std::random_device rd;     // Random seed
+	std::mt19937 rng(rd());    // Mersenne Twister RNG
+	std::uniform_int_distribution<int> dist(1, 2);  // Random number from 1 to 2
 
-    int animationType = dist(rng);  // Get random number (1 or 2)
+	int animationType = dist(rng);  // Get random number (1 or 2)
 
-    // Use switch to load the appropriate animation set
-    switch (animationType) {
-    case 1:
-        // Load type 1 animations
-        for (int i = 1; i <= 4; ++i) {
-            idleAnimation.addFrame("assets/type1/Idle" + std::to_string(i) + ".png");
-        }
-        for (int i = 1; i <= 6; ++i) {
-            walkAnimation.addFrame("assets/type1/Walk" + std::to_string(i) + ".png");
-        }
-        break;
+	// Use switch to load the appropriate animation set
+	switch (animationType) {
+	case 1:
+		// Load type 1 animations
+		for (int i = 1; i <= 4; ++i) {
+			idleAnimation.addFrame("assets/type1/Idle" + std::to_string(i) + ".png");
+		}
+		for (int i = 1; i <= 6; ++i) {
+			walkAnimation.addFrame("assets/type1/Walk" + std::to_string(i) + ".png");
+		}
+		break;
 
-    case 2:
-        // Load type 2 animations
-        for (int i = 1; i <= 4; ++i) {
-            idleAnimation.addFrame("assets/type2/Idle" + std::to_string(i) + ".png");
-        }
-        for (int i = 1; i <= 6; ++i) {
-            walkAnimation.addFrame("assets/type2/Walk" + std::to_string(i) + ".png");
-        }
-        break;
+	case 2:
+		// Load type 2 animations
+		for (int i = 1; i <= 4; ++i) {
+			idleAnimation.addFrame("assets/type2/Idle" + std::to_string(i) + ".png");
+		}
+		for (int i = 1; i <= 6; ++i) {
+			walkAnimation.addFrame("assets/type2/Walk" + std::to_string(i) + ".png");
+		}
+		break;
 
-        // Optional: Handle unexpected cases if more sets are added in the future
-    default:
-        std::cerr << "Unknown animation type: " << animationType << std::endl;
-        break;
-    }
+		// Optional: Handle unexpected cases if more sets are added in the future
+	default:
+		std::cerr << "Unknown animation type: " << animationType << std::endl;
+		break;
+	}
 
-    std::cout << "Loaded animation type: " << animationType << std::endl;
+	std::cout << "Loaded animation type: " << animationType << std::endl;
+}
+
+bool Customer::hasReachedCashier()
+{
+	if (walkAnimation.getPosition() == targetCashierPos) {
+		std::cout << name << " has reached cashier." << std::endl;
+		return true;
+	}
+	return false;
+}
+
+bool Customer::hasReachedQueue()
+{
+	if (walkAnimation.getPosition() == targetQueuePos) {
+		std::cout << name << " has reached queue." << std::endl;
+		return true;
+	}
+	return false;
+}
+
+bool Customer::hasReachedLeave()
+{
+	if (walkAnimation.getPosition() == targetLeavePos) {
+		std::cout << name << " has left the store." << std::endl;
+		return true;
+	}
+	return false;
 }
 
 Customer::~Customer() {
-    std::cout << name << " is being destroyed." << std::endl;
+	std::cout << name << " is being destroyed." << std::endl;
 
-    // Ensure the animation resources are cleared
-    idleAnimation.clear();
-    walkAnimation.clear();
+	// Ensure the animation resources are cleared
+	idleAnimation.clear();
+	walkAnimation.clear();
 }

@@ -4,8 +4,6 @@
 #include "UIManager.h"
 #include "Customer.h"
 #include "NavBar.h"
-#include <memory>  
-#include <queue>
 #include <vector>
 
 class Game {
@@ -21,6 +19,7 @@ public:
     void showPayment();
     std::string getStoreCreditString() const;
     void randomCustomer();
+	void afterPayment();
 
 private:
     const int WINDOW_WIDTH = 1024;
@@ -29,27 +28,32 @@ private:
     Stocks stocks;
     GroceryStore groceryStore;
 
-    std::vector<sf::Vector2f> queuePositions;
+    //std::vector<sf::Vector2f> queuePositions;
     sf::Vector2f cashierPosition = { 48.0f, 738.0f };
     bool isProcessing = false;  // Track if payment is in progress
 
     std::vector<std::shared_ptr<Customer>> customers;
-    std::queue<std::shared_ptr<Customer>> customerQueue;
+    std::vector<std::shared_ptr<Customer>> customerQueue;
 
-    std::shared_ptr<Customer> currentCustomer = nullptr;  // Track the customer at the cashier
+    std::shared_ptr<Customer> currentCustomer;
+    std::shared_ptr<Customer> leavingCustomer;
+    std::shared_ptr<Customer> customerGoingToCashier;
 
     UIManager stockUI, storeUI, paymentUI, storeCreditUI;
     NavBar navBar;
     sf::Clock clock;
     bool showStockInfo, showStoreInfo, showPaymentInfo;
 
-    void processQueue();  // Process the queue
-    void setupQueuePositions();
-    void handlePayment();  // New function to handle payment manually
+	std::vector<sf::Vector2f> queuePositions;
+	void initializeQueuePositions();
 
-    void shiftQueueForward();
+	bool isCashierAvailable() const;
 
-    int nextQueueIndex = 0;  // Track the next available queue position
+	void processCustomerQueue();
+    void shiftCustomerQueuePosition();
+
+    float spawnTimer;
+    float spawnInterval = 1;
 };
 
 
