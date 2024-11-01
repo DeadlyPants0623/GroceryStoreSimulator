@@ -1,10 +1,12 @@
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 #include "Stocks.h"
 #include "GroceryStore.h"
 #include "UIManager.h"
 #include "Customer.h"
 #include "NavBar.h"
 #include <vector>
+#include "Sound.h"
 
 class Game {
 public:
@@ -52,9 +54,8 @@ private:
 	void processCustomerQueue();
     void shiftCustomerQueuePosition();
 
+    void RandomSpawnLoop();
     float spawnTimer;
     float spawnInterval = 1;
+	Sound buttonClick;
 };
-
-
-

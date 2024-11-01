@@ -1,3 +1,4 @@
+#pragma once
 #include <SFML/Graphics.hpp>
 #include <string>
 #include "Inventory.h"
@@ -31,6 +32,7 @@ public:
     void render(sf::RenderWindow& window);
     void setPos(float x, float y);
 	void setText(const std::string& text);
+	void setFontSize(int size);
     void handleClick(const sf::Vector2i& mousePos);
 
     void createProductButtons(GroceryStore& groceryStore, const Inventory& inventory);

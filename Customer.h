@@ -1,5 +1,6 @@
 #include "Inventory.h"
 #include "GroceryStore.h"
+#include "UIManager.h"
 #include <string>
 #include "Animation.h"
 
@@ -12,6 +13,18 @@ enum class CustomerState {
 	Leaving
 };
 
+enum class CustomerMood {
+	Happy,
+	Angry,
+	Neutral
+};
+
+enum class CustomerMessages {
+    Hello,
+	NoStock,
+	ThankYou
+};
+
 class Customer {
 public:
     Customer(const std::string& name);
@@ -22,7 +35,7 @@ public:
     void update(float deltaTime);  // Update the active animation
     void render(sf::RenderWindow& window);  // Render the active animation
 
-    void buyProduct(const std::string& productName, float productPrice, int quantity, Inventory& storeInventory);
+    bool buyProduct(const std::string& productName, float productPrice, int quantity, Inventory& storeInventory);
     void displayInventory() const;
     void sendToCart(GroceryStore& groceryStore) const;
 
@@ -60,4 +73,10 @@ private:
     bool markedForRemoval = false;
 
 	void loadRandomAnimations();
+    UIManager message;
+    float messageTimer = 0.f;
+	bool shouldShowMessage;
+	bool checkMessageTimer();
+
+    void setCustomerMessage(CustomerMessages message, std::string parameter);
 };

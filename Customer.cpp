@@ -9,6 +9,9 @@ Customer::Customer(const std::string& name)
 	walkAnimation(0.1f)   // 0.1s per frame for walk animation
 {
 	loadRandomAnimations();
+	message.loadFont("pixel.ttf");
+	message.setFontSize(20);
+	setCustomerMessage(CustomerMessages::Hello, "");
 }
 
 std::string Customer::getName() const { return name; }
@@ -37,6 +40,15 @@ void Customer::update(float deltaTime) {
 	default:
 		break;
 	}
+	message.setPos(getPosition().x + 20, getPosition().y - 30.f);
+	if (shouldShowMessage)
+	{
+		if (checkMessageTimer())
+		{
+			messageTimer += deltaTime;
+			std::cout << messageTimer << std::endl;
+		}
+	}
 }
 
 void Customer::render(sf::RenderWindow& window) {
@@ -61,13 +73,23 @@ void Customer::render(sf::RenderWindow& window) {
 	default:
 		break;
 	}
+	if (shouldShowMessage)
+	{
+		message.render(window);
+	}
 }
 
-void Customer::buyProduct(const std::string& productName, float productPrice, int quantity, Inventory& storeInventory) {
+bool Customer::buyProduct(const std::string& productName, float productPrice, int quantity, Inventory& storeInventory) {
 	if (storeInventory.removeProduct(productName, quantity)) {
 		std::cout << name << " bought " << quantity << " of " << productName << std::endl;
 		Product product(productName, productPrice);
 		inventory.addProduct(product, quantity);
+		return true;
+	}
+	else {
+		std::cout << "Not enough quantity of " << productName << " in stock." << std::endl;
+		setCustomerMessage(CustomerMessages::NoStock, productName);
+		return false;
 	}
 }
 
@@ -208,6 +230,36 @@ void Customer::loadRandomAnimations()
 	}
 
 	std::cout << "Loaded animation type: " << animationType << std::endl;
+}
+
+bool Customer::checkMessageTimer()
+{
+	if (messageTimer <= 3.0f)
+	{
+		return true;
+	}
+	messageTimer = 0.0f;
+	shouldShowMessage = false;
+	return false;
+}
+
+void Customer::setCustomerMessage(CustomerMessages message, std::string parameter)
+{
+	switch (message)
+	{
+	case CustomerMessages::Hello:
+		this->message.setText("Hellooo!!");
+		break;
+	case CustomerMessages::NoStock:
+		this->message.setText("No " + parameter + " available.");
+		break;
+	case CustomerMessages::ThankYou:
+		this->message.setText("Thank you! Goodbye!");
+		break;
+	default:
+		break;
+	}
+	shouldShowMessage = true;
 }
 
 bool Customer::hasReachedCashier()

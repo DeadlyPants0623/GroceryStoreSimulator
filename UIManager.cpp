@@ -52,6 +52,11 @@ void UIManager::setText(const std::string& text)
 	this->text.setString(text);
 }
 
+void UIManager::setFontSize(int size)
+{
+	text.setCharacterSize(size);
+}
+
 void UIManager::handleClick(const sf::Vector2i& mousePos) {
 	// Check if any product button was clicked
 	for (auto& button : productButtons) {

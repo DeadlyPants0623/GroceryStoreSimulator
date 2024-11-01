@@ -23,14 +23,15 @@ Game::Game()
 	groceryStore(stocks), showStockInfo(false), showStoreInfo(false), showPaymentInfo(false) {
 
 	srand(static_cast<unsigned int>(time(0)));
-	cashierPosition = { 48.0f, WINDOW_HEIGHT - 30.f };
+	cashierPosition = { 50.0f, WINDOW_HEIGHT - 30.f };
+	groceryStore.setPosition({0, WINDOW_HEIGHT - 65.0f});
 
 	stocks.loadConfig("stock_config.txt");
-	groceryStore.buyStocks("Apple");
-	groceryStore.buyStocks("Banana");
-	groceryStore.buyStocks("Carrot");
-	groceryStore.buyStocks("Corn");
-	groceryStore.buyStocks("Grape");
+	//groceryStore.buyStocks("Apple");
+	//groceryStore.buyStocks("Banana");
+	//groceryStore.buyStocks("Carrot");
+	//groceryStore.buyStocks("Corn");
+	//groceryStore.buyStocks("Grape");
 
 	navBar.addButton("Stocks", [this]() { showStocks(); });
 	navBar.addButton("Store", [this]() { showStore(); });
@@ -39,7 +40,7 @@ Game::Game()
 	initializeQueuePositions();
 
 	loadFonts("pixel.ttf");
-	//randomCustomer();
+	randomCustomer();
 	//randomCustomer();
 	//randomCustomer();
 	//randomCustomer();
@@ -87,6 +88,7 @@ void Game::processEvents() {
 }
 
 void Game::update(float deltaTime) {
+	groceryStore.update(deltaTime);
 	if (showStockInfo) {
 		stockUI.updateText(groceryStore, stocks.getInventory(), UpdateOptions::IncludePrice | UpdateOptions::IncludeButton);
 	}
@@ -126,9 +128,18 @@ void Game::update(float deltaTime) {
 			srand(static_cast<unsigned int>(time(0)));
 			int randomStock = rand() % 5;
 			int randomQuantity = rand() % 5 + 1;
-			customer->buyProduct(stockNames[randomStock], stockPrices[randomStock], randomQuantity, groceryStore.getInventory());
-			customer->sendToCart(groceryStore);
-			customer->setCustomerState(CustomerState::Idle);
+			if (customer->buyProduct(stockNames[randomStock], stockPrices[randomStock], randomQuantity, groceryStore.getInventory()))
+			{
+				customer->sendToCart(groceryStore);
+				customer->setCustomerState(CustomerState::Idle);
+			}
+			else {
+				customer->setTargetLeavePosition({ -50, WINDOW_HEIGHT - 30.f });
+				customer->moveTo({ -50, WINDOW_HEIGHT - 30.f });
+				currentCustomer = nullptr;
+				customerGoingToCashier = nullptr;
+				customer->setCustomerState(CustomerState::Leaving);
+			}
 			break;
 		}
 		case CustomerState::Leaving: {
@@ -146,16 +157,7 @@ void Game::update(float deltaTime) {
 		customers.end());
 
 	spawnTimer += deltaTime;
-	if (spawnTimer >= spawnInterval)
-	{
-		int randomChance = rand() % 100;
-		if (randomChance <= 50) {
-			if (customerQueue.size() < 10) {
-				randomCustomer();
-			}
-		}
-		spawnTimer = 0;
-	}
+	//RandomSpawnLoop();
 }
 
 void Game::render() {
@@ -173,6 +175,8 @@ void Game::render() {
 	}
 	storeCreditUI.render(window);
 
+	groceryStore.render(window);
+
 	for (auto& customer : customers) {
 		customer->render(window);
 	}
@@ -185,6 +189,7 @@ void Game::showStocks() {
 	showStoreInfo = false;
 	showPaymentInfo = false;
 	stockUI.setPos(0, 50);
+	buttonClick.playSound("click");
 }
 
 void Game::showStore() {
@@ -192,6 +197,7 @@ void Game::showStore() {
 	showStockInfo = false;
 	showPaymentInfo = false;
 	storeUI.setPos(110, 50);
+	buttonClick.playSound("click");
 }
 
 void Game::showPayment() {
@@ -199,6 +205,7 @@ void Game::showPayment() {
 	showStockInfo = false;
 	showStoreInfo = false;
 	paymentUI.setPos(220, 50);
+	buttonClick.playSound("click");
 }
 
 std::string Game::getStoreCreditString() const {
@@ -214,7 +221,7 @@ void Game::randomCustomer() {
 		return;
 	}
 
-	auto customer = std::make_shared<Customer>("Customer " + std::to_string(customers.size() + 1));
+	auto customer = std::make_shared<Customer>("Customer " + std::to_string(customers.size()));
 	std::cout << "Customer " << customers.size() << " has been added." << std::endl;
 
 	customers.push_back(customer);
@@ -236,9 +243,8 @@ void Game::afterPayment()
 {
 	if (currentCustomer) {
 		std::cout << "Payment received." << std::endl;
-		currentCustomer->setTargetLeavePosition({ 0, WINDOW_HEIGHT - 30.f });
-		currentCustomer->moveTo({ 0, WINDOW_HEIGHT - 30.f });
-		leavingCustomer = currentCustomer;
+		currentCustomer->setTargetLeavePosition({ -50, WINDOW_HEIGHT - 30.f });
+		currentCustomer->moveTo({ - 50, WINDOW_HEIGHT - 30.f });
 		currentCustomer->setCustomerState(CustomerState::Leaving);
 		currentCustomer = nullptr;
 		customerGoingToCashier = nullptr;
@@ -285,5 +291,19 @@ void Game::shiftCustomerQueuePosition()
 		customerQueue[i]->setTargetQueuePosition(queuePositions[i]);
 		customerQueue[i]->moveTo(queuePositions[i]);
 		customerQueue[i]->setCustomerState(CustomerState::WalkingToQueue);
+	}
+}
+
+void Game::RandomSpawnLoop()
+{
+	if (spawnTimer >= spawnInterval)
+	{
+		int randomChance = rand() % 100;
+		if (randomChance <= 50) {
+			if (customerQueue.size() < 10) {
+				randomCustomer();
+			}
+		}
+		spawnTimer = 0;
 	}
 }

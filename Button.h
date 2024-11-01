@@ -1,6 +1,3 @@
-#ifndef BUTTON_H
-#define BUTTON_H
-
 #include <SFML/Graphics.hpp>
 #include <string>
 #include <functional>
@@ -23,5 +20,3 @@ public:
     void handleClick();  // Exposed as public so UIManager can trigger it
 	std::string getLabel() const;
 };
-
-#endif
