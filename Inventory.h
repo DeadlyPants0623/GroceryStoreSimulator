@@ -12,7 +12,7 @@ public:
     float calculateTotalPrice(const Product& product, bool storePrice) const;
 	float getTotalPrice(bool storePrice) const;
 
-    const std::vector<Product>& getProducts() const;
+    std::vector<Product>& getProducts();
 	void clear();
 
 private:

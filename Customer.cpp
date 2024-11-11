@@ -1,7 +1,4 @@
 #include "Customer.h"
-#include <iostream>
-#include <random>
-#include <functional>
 
 Customer::Customer(const std::string& name)
 	: name(name),
@@ -11,7 +8,15 @@ Customer::Customer(const std::string& name)
 	loadRandomAnimations();
 	message.loadFont("pixel.ttf");
 	message.setFontSize(20);
-	setCustomerMessage(CustomerMessages::Hello, "");
+
+	mood = setRandomCustomerMood();
+	switch (mood) {
+	case EMood::Happy:   std::cout << "Happy mood!\n"; break;
+	case EMood::Angry:   std::cout << "Angry mood!\n"; break;
+	case EMood::Neutral: std::cout << "Neutral mood!\n"; break;
+	default:             std::cout << "Unknown mood!\n"; break;
+	}
+	setCustomerMessage(EMessages::Hello, "");
 }
 
 std::string Customer::getName() const { return name; }
@@ -46,9 +51,9 @@ void Customer::update(float deltaTime) {
 		if (checkMessageTimer())
 		{
 			messageTimer += deltaTime;
-			std::cout << messageTimer << std::endl;
 		}
 	}
+	updatePatience(deltaTime);
 }
 
 void Customer::render(sf::RenderWindow& window) {
@@ -88,7 +93,7 @@ bool Customer::buyProduct(const std::string& productName, float productPrice, in
 	}
 	else {
 		std::cout << "Not enough quantity of " << productName << " in stock." << std::endl;
-		setCustomerMessage(CustomerMessages::NoStock, productName);
+		setCustomerMessage(EMessages::NoStock, productName);
 		return false;
 	}
 }
@@ -98,9 +103,15 @@ void Customer::displayInventory() const {
 	inventory.display();
 }
 
-void Customer::sendToCart(GroceryStore& groceryStore) const
+void Customer::sendToCart(GroceryStore& groceryStore)
 {
 	groceryStore.addToCart(inventory.getProducts());
+}
+
+void Customer::setMovementSpeed(float speed)
+{
+	std::cout << name << " movement speed set to " << speed << std::endl;
+	movementSpeed = speed;
 }
 
 void Customer::setPosition(const sf::Vector2f& pos) {
@@ -243,23 +254,102 @@ bool Customer::checkMessageTimer()
 	return false;
 }
 
-void Customer::setCustomerMessage(CustomerMessages message, std::string parameter)
+void Customer::setCustomerMessage(EMessages message, std::string parameter)
 {
-	switch (message)
+	std::vector<std::string> messages;
+
+	switch (mood)
 	{
-	case CustomerMessages::Hello:
-		this->message.setText("Hellooo!!");
+	case EMood::Happy:
+		switch (message)
+		{
+		case EMessages::Hello:
+			messages = { "Hello! Good Morning!",
+						 "Top of the morning to you!",
+						 "Bing Bong!!!",
+						 "Hey, Good Morning!" };
+			break;
+		case EMessages::NoStock:
+			messages = { "I'm sorry, it looks like you're out of " + parameter + ".",
+						 "I couldn't find " + parameter + ".",
+						 "Hey, I realized that you do not have " + parameter + " in stock." };
+			break;
+		case EMessages::ThankYou:
+			messages = { "Thank you! Have a great day!",
+						 "Thanks! Have a great day!",
+						 "Thank you very much! Have a great day!",
+						 "Thanks a lot! Have a great day!" };
+			break;
+		}
 		break;
-	case CustomerMessages::NoStock:
-		this->message.setText("No " + parameter + " available.");
+	case EMood::Neutral:
+		switch (message)
+		{
+		case EMessages::Hello:
+			messages = { "Hello!",
+						 "Good Morning!",
+						 "Hey!",
+						 "Hi!" };
+			break;
+		case EMessages::NoStock:
+			messages = { "I'm sorry, we're out of " + parameter + ".",
+						 "Looks like we're out of " + parameter + ".",
+						 "Sorry, we're out of " + parameter + ".",
+						 "Looks like we're out of " + parameter + "." };
+			break;
+		case EMessages::ThankYou:
+			messages = { "Thank you!",
+						 "Thanks!",
+						 "Thank you very much!",
+						 "Thanks a lot!" };
+			break;
+		}
 		break;
-	case CustomerMessages::ThankYou:
-		this->message.setText("Thank you! Goodbye!");
-		break;
-	default:
+	case EMood::Angry:
+		switch (message)
+		{
+		case EMessages::Hello:
+			messages = { "This place is a mess. Is anyone going to assist me?",
+						 "Let’s make this quick.I’ve got better things to do.",
+						 "I’m here because I have no other choice. Make it worth my while.",
+						 "Every time I come in, it's the same story. Can someone just help me this time?" };
+			break;
+		case EMessages::NoStock:
+			messages = { "There are no " + parameter + " available.",
+						 "Looks like you're out of " + parameter + ".",
+						 "Can't find " + parameter + ".",
+						 "I wouldn't come here again if I can't find " + parameter + "."};
+			break;
+		case EMessages::ThankYou:
+			messages = { "Piss off!",
+						 "Thanks for nothing",
+						 "I should have known better than to come here.",
+						 "Don’t worry—you won’t see me here again." };
+			break;
+		}
 		break;
 	}
-	shouldShowMessage = true;
+
+	// Generate a random index to select a random message
+	if (!messages.empty()) {
+		std::random_device rd;
+		std::mt19937 gen(rd());
+		std::uniform_int_distribution<int> dist(0, messages.size() - 1);
+
+		std::string selectedMessage = messages[dist(gen)];
+
+		this->message.setText(selectedMessage);
+		shouldShowMessage = true;
+	}
+}
+
+EMood Customer::setRandomCustomerMood()
+{
+	std::random_device rd;     // Random seed
+	std::mt19937 rng(rd());    // Mersenne Twister RNG
+	std::uniform_int_distribution<int> dist(0, static_cast<int>(EMood::Last) - 1);  // Random from 0 to Last-1
+
+	return static_cast<EMood>(dist(rng));
 }
 
 bool Customer::hasReachedCashier()
@@ -287,6 +377,24 @@ bool Customer::hasReachedLeave()
 		return true;
 	}
 	return false;
+}
+
+float Customer::getPatience() const
+{
+	return patience;
+}
+
+void Customer::updatePatience(float deltaTime)
+{
+	// Update the customer's patience
+	if (state == CustomerState::IdleInQueue)
+	{
+		if (checkMessageTimer())
+		{
+			patience += deltaTime * patienceMultiplier;
+			//std::cout << name << "'s patience: " << patience << std::endl;
+		}
+	}
 }
 
 Customer::~Customer() {

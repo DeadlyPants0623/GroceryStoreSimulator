@@ -14,7 +14,7 @@ void Stocks::loadConfig(const std::string& filename) {
     while (getline(file, line)) {
         std::istringstream iss(line);
         std::string name;
-        double price;
+        float price;
         int quantity;
 
         if (iss >> name >> price >> quantity) {
@@ -29,6 +29,6 @@ void Stocks::displayInventory() const {
     inventory.display();
 }
 
-const Inventory& Stocks::getInventory() const {
+Inventory& Stocks::getInventory() {
     return inventory;
 }

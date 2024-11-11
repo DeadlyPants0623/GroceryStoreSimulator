@@ -15,7 +15,7 @@ void UIManager::loadFont(const std::string& fontPath) {
 	text.setFont(font);
 }
 
-void UIManager::updateText(GroceryStore& groceryStore, const Inventory& inventory, UpdateOptions options) {
+void UIManager::updateText(GroceryStore& groceryStore, Inventory& inventory, UpdateOptions options) {
 	// Generate the inventory string based on the options provided
 	text.setString(generateInventoryString(
 		groceryStore, inventory,
@@ -40,7 +40,12 @@ void UIManager::render(sf::RenderWindow& window) {
 	// Render all buttons
 	for (auto& button : productButtons) {
 		button.render(window);
-	}	
+	}
+
+	// Render all upgrade buttons
+	for (auto& button : upgradeButtons) {
+		button.render(window);
+	}
 }
 
 void UIManager::setPos(float x, float y) {
@@ -65,9 +70,16 @@ void UIManager::handleClick(const sf::Vector2i& mousePos) {
 			button.handleClick();  // Trigger button's callback
 		}
 	}
+
+	for (auto& button : upgradeButtons) {
+		if (button.isClicked(mousePos)) {
+			std::cout << "Upgrade Button clicked!\n";
+			button.handleClick();  // Trigger button's callback
+		}
+	}
 }
 
-void UIManager::createProductButtons(GroceryStore& groceryStore, const Inventory& inventory) {
+void UIManager::createProductButtons(GroceryStore& groceryStore, Inventory& inventory) {
 	productButtons.clear();  // Clear previous buttons
 
 	float buttonY = position.y + 7.5f;  // Initial Y position for buttons
@@ -114,14 +126,46 @@ bool UIManager::isPayButtonClicked(const sf::Vector2i& mousePos) const {
 	return false;
 }
 
-std::string UIManager::generateInventoryString(GroceryStore& groceryStore, const Inventory& inventory, bool includeHeader, bool includeFooter, bool includePrice, bool includeButton, bool storePrice, bool paymentButton) {
+void UIManager::createUpgradeButtons(UpgradeManager& upgradeManager, Game& game)
+{
+	upgradeButtons.clear();  // Clear any existing buttons
+	float buttonY = position.y + 50.0f;  // Initial Y position for the buttons
+
+	for (size_t i = 0; i < upgradeManager.getUpgrades().size(); ++i) {
+		Upgrade& upgrade = upgradeManager.getUpgrade(i);
+
+		// Format the initial button label with the upgrade name and cost
+		std::ostringstream oss;
+		oss << upgrade.getName() << " - Cost: $" << std::fixed << std::setprecision(2) << upgrade.getCurrentCost();
+		std::string buttonLabel = oss.str();
+
+		// Create each upgrade button with a click event that attempts the upgrade
+		Button button(
+			buttonLabel,
+			sf::Vector2f(position.x + 200, buttonY),
+			sf::Vector2f(250, 40),
+			[&upgradeManager, &game, this, i]() {
+				upgradeManager.attemptUpgrade(i, game, *this);  // Check and apply upgrade on click
+				this->refreshUpgradeButtons(upgradeManager, game);  // Refresh buttons to show updated costs
+			}
+		);
+
+		button.setFont(font);
+		upgradeButtons.push_back(button);
+		buttonY += 50;  // Move the next button down
+	}
+
+	std::cout << upgradeButtons.size() << " Upgrade buttons created\n";
+}
+
+std::string UIManager::generateInventoryString(GroceryStore& groceryStore, Inventory& inventory, bool includeHeader, bool includeFooter, bool includePrice, bool includeButton, bool storePrice, bool paymentButton) {
 	std::ostringstream oss;  // Use string stream to control the formatting
 
 	if (includeHeader) {
 		oss << "Products and Quantity and Total Price\n";
 	}
 
-	for (const auto& product : inventory.getProducts()) {
+	for ( Product product : inventory.getProducts()) {
 		oss << product.getName() << "| |"
 			<< product.getQuantity();
 
@@ -129,11 +173,14 @@ std::string UIManager::generateInventoryString(GroceryStore& groceryStore, const
 			oss << "| |$" << std::fixed << std::setprecision(2);
 			if (storePrice)
 			{
-				oss << product.getPrice() * 1.1 * product.getQuantity();  // Ensure 2 decimal places
+				oss << product.getPrice() * product.getQuantity();  // Ensure 2 decimal places // TODO: Add store price multiplier
 			}
 			else
 			{
-				oss << product.getPrice() * product.getQuantity();  // Ensure 2 decimal places
+				float localUpgradedPrice = product.getPrice() - (product.getPrice() * groceryStore.getStockCostMultiplier());
+				std::cout << product.getName() << "Price: " << localUpgradedPrice << std::endl;
+				product.setPrice(localUpgradedPrice);
+				oss << (product.getPrice() * product.getQuantity());  // Ensure 2 decimal places
 			}
 		}
 
@@ -151,4 +198,16 @@ std::string UIManager::generateInventoryString(GroceryStore& groceryStore, const
 	std::string inventoryText = oss.str();
 	//std::cout << inventoryText;  // Output the inventory text
 	return inventoryText;
+}
+
+void UIManager::refreshUpgradeButtons(UpgradeManager& upgradeManager, Game& game) {
+
+	for (size_t i = 0; i < upgradeButtons.size(); ++i) {
+		Upgrade& upgrade = upgradeManager.getUpgrade(i);
+		// Format the initial button label with the upgrade name and cost
+		std::ostringstream oss;
+		oss << upgrade.getName() << " - Cost: $" << std::fixed << std::setprecision(2) << upgrade.getCurrentCost();
+		std::string buttonLabel = oss.str();
+		upgradeButtons[i].setLabel(buttonLabel);
+	}
 }

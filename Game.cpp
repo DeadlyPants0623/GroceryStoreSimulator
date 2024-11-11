@@ -36,6 +36,27 @@ Game::Game()
 	navBar.addButton("Stocks", [this]() { showStocks(); });
 	navBar.addButton("Store", [this]() { showStore(); });
 	navBar.addButton("Payment", [this]() { showPayment(); });
+	navBar.addButton("Upgrades", [this]() { showUpgrades(); });
+
+	// Upgrades
+	if (!upgradeManager.loadUpgradesFromFile("upgrades.json", *this)) {
+		std::cerr << "Failed to load upgrades from file.\n";
+	}
+	else {
+		std::cout << "Loaded upgrades from file.\n";
+	}
+
+	upgradesUI.createUpgradeButtons(upgradeManager, *this);
+
+	// Set up progress bar background
+	progressBarBackground.setSize(sf::Vector2f(300, 40));   // Example size
+	progressBarBackground.setFillColor(sf::Color(100, 100, 100)); // Gray background
+	progressBarBackground.setPosition(progressBarXLocation, 0); // Position at bottom of the screen
+
+	// Set up progress bar itself
+	progressBar.setSize(sf::Vector2f(0, 40));  // Initial size with 0 progress
+	progressBar.setFillColor(sf::Color::Green); // Green progress color
+	progressBar.setPosition(progressBarXLocation, 0); // Same position as background
 
 	initializeQueuePositions();
 
@@ -52,6 +73,7 @@ void Game::loadFonts(const std::string& fontPath) {
 	storeUI.loadFont(fontPath);
 	paymentUI.loadFont(fontPath);
 	storeCreditUI.loadFont(fontPath);
+	upgradesUI.loadFont(fontPath);
 }
 
 void Game::run() {
@@ -72,9 +94,15 @@ void Game::processEvents() {
 		else if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left) {
 			auto mousePos = sf::Mouse::getPosition(window);
 			navBar.handleClick(mousePos);
-			stockUI.handleClick(mousePos);
-			paymentUI.handleClick(mousePos);
-
+			if (showStockInfo) {
+				stockUI.handleClick(mousePos);
+			}
+			if (showPaymentInfo) {
+				paymentUI.handleClick(mousePos);
+			}
+			if (showUpgradesInfo) {
+				upgradesUI.handleClick(mousePos);
+			}
 			if (paymentUI.isPayButtonClicked(mousePos)) {
 				afterPayment();
 			}
@@ -88,21 +116,27 @@ void Game::processEvents() {
 }
 
 void Game::update(float deltaTime) {
+	// Update the grocery store
 	groceryStore.update(deltaTime);
 	if (showStockInfo) {
 		stockUI.updateText(groceryStore, stocks.getInventory(), UpdateOptions::IncludePrice | UpdateOptions::IncludeButton);
 	}
+	// Update the store UI
 	if (showStoreInfo) {
 		storeUI.updateText(groceryStore, groceryStore.getInventory(), UpdateOptions::IncludePrice | UpdateOptions::StorePrice);
 	}
+	// Update the payment UI
 	if (showPaymentInfo) {
 		paymentUI.updateText(groceryStore, groceryStore.getCheckOutInventory(), UpdateOptions::IncludeHeader | UpdateOptions::IncludeFooter | UpdateOptions::StorePrice | UpdateOptions::PaymentButton);
 	}
+	// Update the store credit UI
 	storeCreditUI.setText(getStoreCreditString());
-	storeCreditUI.setPos(WINDOW_WIDTH - 400.f, 0);
+	storeCreditUI.setPos(WINDOW_WIDTH - 300.f, 0);
 
+	// Update the customers
 	for (auto& customer : customers) {
 		customer->update(deltaTime);
+		totalCustomerPatience += customer->getPatience();
 		switch (customer->getCustomerState()) {
 		case CustomerState::WalkingToQueue: {
 			if (customer->hasReachedQueue()) {
@@ -150,7 +184,15 @@ void Game::update(float deltaTime) {
 		}
 		}
 	}
-	// After the loop, remove the marked customers
+	// After the loop
+	// Set patience
+	//std::cout << "Total Customer Patience: " << totalCustomerPatience << std::endl;
+	setProgress(totalCustomerPatience / customers.size());
+
+	// Reset Customer Patience
+	totalCustomerPatience = 0;
+
+	// Remove the marked customers
 	customers.erase(
 		std::remove_if(customers.begin(), customers.end(),
 			[](const std::shared_ptr<Customer>& c) { return c->isMarkedForRemoval(); }),
@@ -173,6 +215,9 @@ void Game::render() {
 	if (showPaymentInfo) {
 		paymentUI.render(window);
 	}
+	if (showUpgradesInfo) {
+		upgradesUI.render(window);
+	}
 	storeCreditUI.render(window);
 
 	groceryStore.render(window);
@@ -181,6 +226,10 @@ void Game::render() {
 		customer->render(window);
 	}
 
+	// Draw the progress bar
+	window.draw(progressBarBackground);
+	window.draw(progressBar);   
+
 	window.display();
 }
 
@@ -188,6 +237,7 @@ void Game::showStocks() {
 	showStockInfo = !showStockInfo;
 	showStoreInfo = false;
 	showPaymentInfo = false;
+	showUpgradesInfo = false;
 	stockUI.setPos(0, 50);
 	buttonClick.playSound("click");
 }
@@ -196,6 +246,7 @@ void Game::showStore() {
 	showStoreInfo = !showStoreInfo;
 	showStockInfo = false;
 	showPaymentInfo = false;
+	showUpgradesInfo = false;
 	storeUI.setPos(110, 50);
 	buttonClick.playSound("click");
 }
@@ -204,7 +255,20 @@ void Game::showPayment() {
 	showPaymentInfo = !showPaymentInfo;
 	showStockInfo = false;
 	showStoreInfo = false;
+	showUpgradesInfo = false;
 	paymentUI.setPos(220, 50);
+	buttonClick.playSound("click");
+}
+
+void Game::showUpgrades()
+{
+	showUpgradesInfo = !showUpgradesInfo;
+	showPaymentInfo = false;
+	showStockInfo = false;
+	showStoreInfo = false;
+	if (showUpgradesInfo) {
+		upgradesUI.createUpgradeButtons(upgradeManager, *this);
+	}
 	buttonClick.playSound("click");
 }
 
@@ -231,6 +295,7 @@ void Game::randomCustomer() {
 		if (customerQueue[i]->getName() == customer->getName())
 		{
 			std::cout << customer->getName() << " has entered the store." << std::endl;
+			customer->setMovementSpeed(upgradedCustomerMovementSpeed);
 			customer->setPosition(sf::Vector2f(WINDOW_WIDTH, WINDOW_HEIGHT - 30));
 			customer->setTargetQueuePosition(queuePositions[i]);
 			customer->moveTo(queuePositions[i]);
@@ -252,6 +317,24 @@ void Game::afterPayment()
 	else {
 		std::cout << "No payment received." << std::endl;
 	}
+}
+
+std::vector<std::shared_ptr<Customer>> Game::getCustomers() const
+{
+	return customers;
+}
+
+void Game::setUpgradedMovementSpeed(float speed)
+{
+	upgradedCustomerMovementSpeed = speed;
+	for (auto& customer : customers) {
+		customer->setMovementSpeed(speed);
+	}
+}
+
+GroceryStore& Game::getGroceryStore()
+{
+	return groceryStore;
 }
 
 void Game::initializeQueuePositions()
@@ -306,4 +389,12 @@ void Game::RandomSpawnLoop()
 		}
 		spawnTimer = 0;
 	}
+}
+
+void Game::setProgress(float progress) {
+	// Clamp the progress value between 0 and 100
+	progressValue = std::max(0.0f, std::min(progress, 100.0f));
+	// Update the width of the progress bar based on progress percentage
+	float width = progressBarBackground.getSize().x * (progressValue / 100.0f);
+	progressBar.setSize(sf::Vector2f(width, progressBarBackground.getSize().y));
 }

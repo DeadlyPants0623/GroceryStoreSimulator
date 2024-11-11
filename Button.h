@@ -19,4 +19,5 @@ private:
 public:
     void handleClick();  // Exposed as public so UIManager can trigger it
 	std::string getLabel() const;
+	void setLabel(const std::string& inLabel);
 };

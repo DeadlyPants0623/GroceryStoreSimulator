@@ -1,0 +1,37 @@
+[
+  {
+    "name": "Customer Speed Boost",
+    "cost": 10.0,
+    "effect": 100,
+    "costMultiplier": 1.02,
+    "effectMultiplier": 1.05
+  },
+  {
+    "name": "Cheaper Stock Cost",
+    "cost": 15.0,
+    "effect": 0.01,
+    "costMultiplier": 1.02,
+    "effectMultiplier": 1.1
+  },
+  {
+    "name": "More Expensive Resale Price",
+    "cost": 100,
+    "effect": 1.1,
+    "costMultiplier": 1.02,
+    "effectMultiplier": 1.05
+  },
+  {
+    "name": "More Customers",
+    "cost": 100,
+    "effect": 2,
+    "costMultiplier": 1.02,
+    "effectMultiplier": 1
+  },
+  {
+    "name": "More Stock",
+    "cost": 100,
+    "effect": 2,
+    "costMultiplier": 1.02,
+    "effectMultiplier": 1
+  }
+]

@@ -7,25 +7,29 @@
 
 class GroceryStore {
 public:
-    GroceryStore(const Stocks& stocks);
+    GroceryStore(Stocks& stocks);
     void update(float deltaTime);
     void render(sf::RenderWindow& window);
     void buyStocks(const std::string& productName);
     void displayInventory() const;
-    void addToCart(const std::vector<Product>& products);
+    void addToCart(std::vector<Product>& products);
 	void receivePayment();
-
+    bool deductStoreCredit(float amount); // New method to handle deductions
 
     Inventory& getInventory();
-    const Inventory& getCheckOutInventory() const;
+    Inventory& getCheckOutInventory();
 	float getStoreCredit() const;
 	void setPosition(const sf::Vector2f& pos);
 
+    // Upgrades
+    void setUpgradeStockCost(float multiplier);
+	float getStockCostMultiplier() const;
+
 private:
-    float storeCredit = 1000000;
+    float storeCredit = 1000;
     Inventory checkOut;
     Inventory inventory;
-    const Stocks& stockManager;
+    Stocks& stockManager;
 	sf::Sprite storeSprite;
 	sf::Texture storeTexture;
 
@@ -35,4 +39,6 @@ private:
     bool showCoin;
 	float showCoinTimer;
     Sound coinSound;
+
+	float stockCostMultiplier = 1.0f;
 };

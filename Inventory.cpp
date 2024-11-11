@@ -56,7 +56,7 @@ float Inventory::getTotalPrice(bool storePrice) const {
 }
 
 
-const std::vector<Product>& Inventory::getProducts() const {
+std::vector<Product>& Inventory::getProducts() {
 	return products;
 }
 

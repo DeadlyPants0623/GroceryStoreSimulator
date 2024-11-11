@@ -1,7 +1,7 @@
 #include "Product.h"
 #include <iostream>
 
-Product::Product(std::string name, double price, int quantity)
+Product::Product(std::string name, float price, int quantity)
     : name(name), price(price), quantity(quantity) {}
 
 std::string Product::getName() const { return name; }
@@ -28,4 +28,11 @@ void Product::display() const {
 float Product::getStorePrice() const
 {
 	return storePrice;
+}
+
+void Product::setPrice(float newPrice)
+{
+	std::cout << "Setting price to: " << newPrice << std::endl;
+	price = newPrice;
+	std::cout << "Price: " << price << std::endl;
 }

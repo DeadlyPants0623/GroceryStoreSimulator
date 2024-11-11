@@ -1,11 +1,9 @@
-#ifndef PRODUCT_H
-#define PRODUCT_H
-
+#pragma once
 #include <string>
 
 class Product {
 public:
-    Product(std::string name = "", double price = 0.0, int quantity = 0);
+    Product(std::string name = "", float price = 0.0, int quantity = 0);
     std::string getName() const;
     float getPrice() const;
     int getQuantity() const;
@@ -17,11 +15,11 @@ public:
 
     float storePrice;
 
-protected:
+    void setPrice(float newPrice);
+
+private:
     std::string name;
     float price;
     int quantity;
 
 };
-
-#endif

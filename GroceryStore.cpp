@@ -1,7 +1,7 @@
 #include "GroceryStore.h"
 #include <iostream>
 
-GroceryStore::GroceryStore(const Stocks& stocks) : stockManager(stocks), coinAnimation(0.1f)
+GroceryStore::GroceryStore(Stocks& stocks) : stockManager(stocks), coinAnimation(0.1f)
 {
 	//Load the store sprite
 	if (!storeTexture.loadFromFile("assets/cashier/cashier.png")) {
@@ -39,13 +39,13 @@ void GroceryStore::render(sf::RenderWindow& window)
 
 void GroceryStore::buyStocks(const std::string& productName) {
 	float localPrice = 0.0f;
-	const auto& products = stockManager.getInventory().getProducts();
+	auto& products = stockManager.getInventory().getProducts();
 	for (const auto& product : products) {
 		if (product.getName() == productName) {
 			//std::cout << "Buying stock: " << productName << std::endl;
-			localPrice = product.getPrice() * product.getQuantity();
-			if (storeCredit >= localPrice) {
-				storeCredit -= localPrice;
+			localPrice = (product.getPrice() * stockCostMultiplier) * product.getQuantity();
+			std::cout << "Price: " << localPrice << "Product Price: " << product.getPrice() << "Stock Cost Multiplier: " << stockCostMultiplier << std::endl;
+			if (deductStoreCredit(localPrice)) {
 				inventory.addProduct(product, product.getQuantity());
 				return;
 			}
@@ -62,7 +62,7 @@ void GroceryStore::displayInventory() const {
 	inventory.display();
 }
 
-void GroceryStore::addToCart(const std::vector<Product>& products)
+void GroceryStore::addToCart(std::vector<Product>& products)
 {
 	for (const auto& product : products)
 	{
@@ -82,11 +82,23 @@ void GroceryStore::receivePayment()
 	}
 }
 
+bool GroceryStore::deductStoreCredit(float amount)
+{
+	if (storeCredit >= amount) {
+		storeCredit -= amount;
+		return true;
+	}
+	else {
+		std::cout << "Insufficient store credit.\n";
+		return false;
+	}
+}
+
 Inventory& GroceryStore::getInventory() {
 	return inventory;
 }
 
-const Inventory& GroceryStore::getCheckOutInventory() const
+Inventory& GroceryStore::getCheckOutInventory()
 {
 	return checkOut;
 }
@@ -99,6 +111,16 @@ float GroceryStore::getStoreCredit() const
 void GroceryStore::setPosition(const sf::Vector2f& pos)
 {
 	storeSprite.setPosition(pos);
+}
+
+void GroceryStore::setUpgradeStockCost(float multiplier)
+{
+	stockCostMultiplier = multiplier;
+}
+
+float GroceryStore::getStockCostMultiplier() const
+{
+	return stockCostMultiplier;
 }
 
 void GroceryStore::loadAnimation()

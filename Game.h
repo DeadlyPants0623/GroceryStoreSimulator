@@ -19,13 +19,19 @@ public:
     void showStocks();
     void showStore();
     void showPayment();
+    void showUpgrades();
     std::string getStoreCreditString() const;
     void randomCustomer();
 	void afterPayment();
 
+	std::vector<std::shared_ptr<Customer>> getCustomers() const;
+	void setUpgradedMovementSpeed(float speed);
+
+	GroceryStore& getGroceryStore();
+
 private:
-    const int WINDOW_WIDTH = 1024;
-    const int WINDOW_HEIGHT = 768;
+    const int WINDOW_WIDTH = 1920;
+    const int WINDOW_HEIGHT = 1080;
     sf::RenderWindow window;
     Stocks stocks;
     GroceryStore groceryStore;
@@ -41,10 +47,11 @@ private:
     std::shared_ptr<Customer> leavingCustomer;
     std::shared_ptr<Customer> customerGoingToCashier;
 
-    UIManager stockUI, storeUI, paymentUI, storeCreditUI;
+    UIManager stockUI, storeUI, paymentUI, storeCreditUI, upgradesUI;
     NavBar navBar;
+	UpgradeManager upgradeManager;
     sf::Clock clock;
-    bool showStockInfo, showStoreInfo, showPaymentInfo;
+    bool showStockInfo, showStoreInfo, showPaymentInfo, showUpgradesInfo;
 
 	std::vector<sf::Vector2f> queuePositions;
 	void initializeQueuePositions();
@@ -55,7 +62,19 @@ private:
     void shiftCustomerQueuePosition();
 
     void RandomSpawnLoop();
+    void setProgress(float progress);
     float spawnTimer;
     float spawnInterval = 1;
 	Sound buttonClick;
+
+	// Patience Progress Bar
+    sf::RectangleShape progressBarBackground;  // Background of the progress bar
+    sf::RectangleShape progressBar;            // Foreground (progress) of the bar
+	float progressBarXLocation = 700.0f ;          // Location of the progress bar
+    float progressValue = 0.0f;                // Current progress value (0-100%)
+
+	float totalCustomerPatience = 0.0f;
+
+	float upgradedCustomerMovementSpeed = 0.0f;
+
 };

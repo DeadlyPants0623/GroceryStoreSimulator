@@ -1,6 +1,4 @@
-#ifndef STOCKS_H
-#define STOCKS_H
-
+#pragma once
 #include "Inventory.h"
 #include <string>
 
@@ -9,10 +7,8 @@ public:
     void loadConfig(const std::string& filename);
     void displayInventory() const;
 
-    const Inventory& getInventory() const;
+    Inventory& getInventory();
 
 private:
     Inventory inventory;
 };
-
-#endif

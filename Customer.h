@@ -1,7 +1,11 @@
+#pragma once
+#include <string>
+#include <iostream>
+#include <random>
+#include <vector>
 #include "Inventory.h"
 #include "GroceryStore.h"
 #include "UIManager.h"
-#include <string>
 #include "Animation.h"
 
 enum class CustomerState {
@@ -10,19 +14,22 @@ enum class CustomerState {
 	IdleInQueue,
 	WalkingToCashier,
 	SendToCart,
-	Leaving
+	Leaving,
+    Last
 };
 
-enum class CustomerMood {
+enum class EMood {
 	Happy,
 	Angry,
-	Neutral
+	Neutral,
+    Last
 };
 
-enum class CustomerMessages {
+enum class EMessages {
     Hello,
 	NoStock,
-	ThankYou
+	ThankYou,
+    Last
 };
 
 class Customer {
@@ -37,8 +44,9 @@ public:
 
     bool buyProduct(const std::string& productName, float productPrice, int quantity, Inventory& storeInventory);
     void displayInventory() const;
-    void sendToCart(GroceryStore& groceryStore) const;
+    void sendToCart(GroceryStore& groceryStore);
 
+	void setMovementSpeed(float speed);
     void setPosition(const sf::Vector2f& pos);
 	void setTargetCashierPosition(const sf::Vector2f& pos);
 	void setTargetQueuePosition(const sf::Vector2f& pos);
@@ -54,6 +62,9 @@ public:
     bool isMarkedForRemoval() const { return markedForRemoval; }
     void markForRemoval() { markedForRemoval = true; }
 
+	float getPatience() const;
+	void updatePatience(float deltaTime);
+
 
 private:
     std::string name;
@@ -68,8 +79,9 @@ private:
 	sf::Vector2f targetQueuePos;
 	sf::Vector2f targetLeavePos;
     sf::Vector2f currentPos;
-	float movementSpeed = 100.0f;
+	float movementSpeed = 0.0f;
 	CustomerState state;
+	EMood mood;
     bool markedForRemoval = false;
 
 	void loadRandomAnimations();
@@ -78,5 +90,12 @@ private:
 	bool shouldShowMessage;
 	bool checkMessageTimer();
 
-    void setCustomerMessage(CustomerMessages message, std::string parameter);
+    void setCustomerMessage(EMessages message, std::string parameter);
+	EMood setRandomCustomerMood();
+
+	// Patience
+	float patience = 0.0f;
+
+    // Difficulty Settings
+	float patienceMultiplier = 5.0f;
 };

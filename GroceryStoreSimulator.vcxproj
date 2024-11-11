@@ -147,6 +147,8 @@
     <ClCompile Include="Sound.cpp" />
     <ClCompile Include="Stocks.cpp" />
     <ClCompile Include="UIManager.cpp" />
+    <ClCompile Include="Upgrade.cpp" />
+    <ClCompile Include="UpgradeManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="stock_config.txt" />
@@ -163,6 +165,11 @@
     <ClInclude Include="Sound.h" />
     <ClInclude Include="Stocks.h" />
     <ClInclude Include="UIManager.h" />
+    <ClInclude Include="Upgrade.h" />
+    <ClInclude Include="UpgradeManager.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="upgrades.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
