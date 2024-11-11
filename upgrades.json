@@ -14,24 +14,24 @@
     "effectMultiplier": 1.1
   },
   {
-    "name": "More Expensive Resale Price",
-    "cost": 100,
-    "effect": 1.1,
+    "name": "Increase Resale Price",
+    "cost": 40.0,
+    "effect": 1,
     "costMultiplier": 1.02,
     "effectMultiplier": 1.05
   },
   {
-    "name": "More Customers",
+    "name": "Increase Queue Size",
     "cost": 100,
     "effect": 2,
-    "costMultiplier": 1.02,
+    "costMultiplier": 1.2,
     "effectMultiplier": 1
   },
   {
-    "name": "More Stock",
-    "cost": 100,
-    "effect": 2,
-    "costMultiplier": 1.02,
+    "name": "Auto Checkout",
+    "cost": 100000,
+    "effect": 1,
+    "costMultiplier": 1,
     "effectMultiplier": 1
   }
 ]

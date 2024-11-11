@@ -25,8 +25,11 @@ public:
     void setUpgradeStockCost(float multiplier);
 	float getStockCostMultiplier() const;
 
+	void setUpgradeResaleCost(float multiplier);
+	float getResaleCostMultiplier() const;
+
 private:
-    float storeCredit = 1000;
+    float storeCredit = 10000000;
     Inventory checkOut;
     Inventory inventory;
     Stocks& stockManager;
@@ -40,5 +43,6 @@ private:
 	float showCoinTimer;
     Sound coinSound;
 
-	float stockCostMultiplier = 1.0f;
+	float stockCostMultiplier = 0.0f;
+	float resaleCostMultiplier = 1.0f;
 };

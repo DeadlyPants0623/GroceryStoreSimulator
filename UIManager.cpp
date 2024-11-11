@@ -1,7 +1,9 @@
+#pragma once
 #include "UIManager.h"
 #include <iostream>
 #include <iomanip>
 #include <sstream>
+#include "Game.h"
 
 UIManager::UIManager() {
 	text.setCharacterSize(35);
@@ -66,14 +68,14 @@ void UIManager::handleClick(const sf::Vector2i& mousePos) {
 	// Check if any product button was clicked
 	for (auto& button : productButtons) {
 		if (button.isClicked(mousePos)) {
-			std::cout << "Button clicked!\n";
+			//std::cout << "Button clicked!\n";
 			button.handleClick();  // Trigger button's callback
 		}
 	}
 
 	for (auto& button : upgradeButtons) {
 		if (button.isClicked(mousePos)) {
-			std::cout << "Upgrade Button clicked!\n";
+			//std::cout << "Upgrade Button clicked!\n";
 			button.handleClick();  // Trigger button's callback
 		}
 	}
@@ -90,7 +92,7 @@ void UIManager::createProductButtons(GroceryStore& groceryStore, Inventory& inve
 		Button button(
 			"Add " + productName,
 			sf::Vector2f(position.x + 350, buttonY),
-			sf::Vector2f(100, 30),
+			sf::Vector2f(140, 30),
 			[&groceryStore, productName]() {  // Capture by reference
 				groceryStore.buyStocks(productName);  // Modify stock
 				//std::cout << "Added stock for product: " << productName << std::endl;
@@ -108,12 +110,13 @@ void UIManager::createPaymentButton(GroceryStore& groceryStore)
 	Button button(
 		"Receive Payment",
 		sf::Vector2f(position.x + 300.f, position.y + 300.f),
-		sf::Vector2f(25, 25),
+		sf::Vector2f(140, 30),
 		[&groceryStore]() {  // Capture by reference
 			groceryStore.receivePayment();  // Modify stock
 			//std::cout << "Added stock for product: " << productName << std::endl;
 		}
 	);
+	button.setFont(font);
 	productButtons.push_back(button);
 }
 
@@ -142,8 +145,8 @@ void UIManager::createUpgradeButtons(UpgradeManager& upgradeManager, Game& game)
 		// Create each upgrade button with a click event that attempts the upgrade
 		Button button(
 			buttonLabel,
-			sf::Vector2f(position.x + 200, buttonY),
-			sf::Vector2f(250, 40),
+			sf::Vector2f(330, buttonY),
+			sf::Vector2f(300, 40),
 			[&upgradeManager, &game, this, i]() {
 				upgradeManager.attemptUpgrade(i, game, *this);  // Check and apply upgrade on click
 				this->refreshUpgradeButtons(upgradeManager, game);  // Refresh buttons to show updated costs
@@ -155,7 +158,7 @@ void UIManager::createUpgradeButtons(UpgradeManager& upgradeManager, Game& game)
 		buttonY += 50;  // Move the next button down
 	}
 
-	std::cout << upgradeButtons.size() << " Upgrade buttons created\n";
+	//std::cout << upgradeButtons.size() << " Upgrade buttons created\n";
 }
 
 std::string UIManager::generateInventoryString(GroceryStore& groceryStore, Inventory& inventory, bool includeHeader, bool includeFooter, bool includePrice, bool includeButton, bool storePrice, bool paymentButton) {
@@ -173,12 +176,11 @@ std::string UIManager::generateInventoryString(GroceryStore& groceryStore, Inven
 			oss << "| |$" << std::fixed << std::setprecision(2);
 			if (storePrice)
 			{
-				oss << product.getPrice() * product.getQuantity();  // Ensure 2 decimal places // TODO: Add store price multiplier
+				oss << product.getPrice() * groceryStore.getResaleCostMultiplier();  // Ensure 2 decimal places
 			}
 			else
 			{
 				float localUpgradedPrice = product.getPrice() - (product.getPrice() * groceryStore.getStockCostMultiplier());
-				std::cout << product.getName() << "Price: " << localUpgradedPrice << std::endl;
 				product.setPrice(localUpgradedPrice);
 				oss << (product.getPrice() * product.getQuantity());  // Ensure 2 decimal places
 			}
@@ -189,7 +191,7 @@ std::string UIManager::generateInventoryString(GroceryStore& groceryStore, Inven
 
 	if (includeFooter) {
 		oss << "Total: $" << std::fixed << std::setprecision(2)
-			<< inventory.getTotalPrice(true) << "\n";  // Ensure 2 decimal places
+			<< inventory.getTotalPrice() * groceryStore.getResaleCostMultiplier() << "\n";  // Ensure 2 decimal places
 		if (paymentButton) {
 			createPaymentButton(groceryStore);
 		}
@@ -201,7 +203,6 @@ std::string UIManager::generateInventoryString(GroceryStore& groceryStore, Inven
 }
 
 void UIManager::refreshUpgradeButtons(UpgradeManager& upgradeManager, Game& game) {
-
 	for (size_t i = 0; i < upgradeButtons.size(); ++i) {
 		Upgrade& upgrade = upgradeManager.getUpgrade(i);
 		// Format the initial button label with the upgrade name and cost
@@ -209,5 +210,9 @@ void UIManager::refreshUpgradeButtons(UpgradeManager& upgradeManager, Game& game
 		oss << upgrade.getName() << " - Cost: $" << std::fixed << std::setprecision(2) << upgrade.getCurrentCost();
 		std::string buttonLabel = oss.str();
 		upgradeButtons[i].setLabel(buttonLabel);
+
+		if (upgrade.getName() == "Auto Checkout" && game.getAutoCheckout()) {
+			upgradeButtons.erase(upgradeButtons.begin() + i);
+		}
 	}
 }

@@ -25,7 +25,12 @@ public:
 	void afterPayment();
 
 	std::vector<std::shared_ptr<Customer>> getCustomers() const;
+
+    // Upgrades
 	void setUpgradedMovementSpeed(float speed);
+    void setUpgradeQueueLimit();
+	void setUpgradeAutoCheckout();
+	bool getAutoCheckout() const;
 
 	GroceryStore& getGroceryStore();
 
@@ -53,8 +58,10 @@ private:
     sf::Clock clock;
     bool showStockInfo, showStoreInfo, showPaymentInfo, showUpgradesInfo;
 
+    //Queue
 	std::vector<sf::Vector2f> queuePositions;
 	void initializeQueuePositions();
+	int QueueLimit = 10;
 
 	bool isCashierAvailable() const;
 
@@ -64,7 +71,7 @@ private:
     void RandomSpawnLoop();
     void setProgress(float progress);
     float spawnTimer;
-    float spawnInterval = 1;
+    float spawnInterval = .1f;
 	Sound buttonClick;
 
 	// Patience Progress Bar
@@ -75,6 +82,7 @@ private:
 
 	float totalCustomerPatience = 0.0f;
 
-	float upgradedCustomerMovementSpeed = 0.0f;
+	float upgradedCustomerMovementSpeed = 100.0f;
+	bool autoCheckout = false;
 
 };

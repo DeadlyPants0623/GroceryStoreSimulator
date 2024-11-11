@@ -84,15 +84,19 @@ void Customer::render(sf::RenderWindow& window) {
 	}
 }
 
-bool Customer::buyProduct(const std::string& productName, float productPrice, int quantity, Inventory& storeInventory) {
-	if (storeInventory.removeProduct(productName, quantity)) {
-		std::cout << name << " bought " << quantity << " of " << productName << std::endl;
-		Product product(productName, productPrice);
+bool Customer::buyProduct(const std::string& productName, int quantity, Inventory& storeInventory) {
+	if (storeInventory.hasProduct(productName, quantity)) {
+		//std::cout << name << " bought " << quantity << " of " << productName << std::endl;
+		Product product = storeInventory.getProduct(productName);
+		if (quantity > product.getQuantity())
+		{
+			quantity = product.getQuantity();
+		}
+		storeInventory.removeProduct(productName, quantity);
 		inventory.addProduct(product, quantity);
 		return true;
 	}
 	else {
-		std::cout << "Not enough quantity of " << productName << " in stock." << std::endl;
 		setCustomerMessage(EMessages::NoStock, productName);
 		return false;
 	}
@@ -110,7 +114,7 @@ void Customer::sendToCart(GroceryStore& groceryStore)
 
 void Customer::setMovementSpeed(float speed)
 {
-	std::cout << name << " movement speed set to " << speed << std::endl;
+	//std::cout << name << " movement speed set to " << speed << std::endl;
 	movementSpeed = speed;
 }
 

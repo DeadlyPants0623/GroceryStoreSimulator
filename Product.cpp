@@ -32,7 +32,7 @@ float Product::getStorePrice() const
 
 void Product::setPrice(float newPrice)
 {
-	std::cout << "Setting price to: " << newPrice << std::endl;
+	//std::cout << "Setting price to: " << newPrice << std::endl;
 	price = newPrice;
-	std::cout << "Price: " << price << std::endl;
+	//std::cout << "Price: " << price << std::endl;
 }

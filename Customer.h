@@ -42,7 +42,7 @@ public:
     void update(float deltaTime);  // Update the active animation
     void render(sf::RenderWindow& window);  // Render the active animation
 
-    bool buyProduct(const std::string& productName, float productPrice, int quantity, Inventory& storeInventory);
+    bool buyProduct(const std::string& productName, int quantity, Inventory& storeInventory);
     void displayInventory() const;
     void sendToCart(GroceryStore& groceryStore);
 
@@ -79,7 +79,7 @@ private:
 	sf::Vector2f targetQueuePos;
 	sf::Vector2f targetLeavePos;
     sf::Vector2f currentPos;
-	float movementSpeed = 0.0f;
+	float movementSpeed = 100.0f;
 	CustomerState state;
 	EMood mood;
     bool markedForRemoval = false;
@@ -97,5 +97,5 @@ private:
 	float patience = 0.0f;
 
     // Difficulty Settings
-	float patienceMultiplier = 5.0f;
+	float patienceMultiplier = 1.0f;
 };

@@ -43,8 +43,8 @@ void GroceryStore::buyStocks(const std::string& productName) {
 	for (const auto& product : products) {
 		if (product.getName() == productName) {
 			//std::cout << "Buying stock: " << productName << std::endl;
-			localPrice = (product.getPrice() * stockCostMultiplier) * product.getQuantity();
-			std::cout << "Price: " << localPrice << "Product Price: " << product.getPrice() << "Stock Cost Multiplier: " << stockCostMultiplier << std::endl;
+			localPrice = (product.getPrice() - (product.getPrice() * stockCostMultiplier)) * product.getQuantity();
+			//std::cout << "Price: " << localPrice << "Product Price: " << product.getPrice() << "Stock Cost Multiplier: " << stockCostMultiplier << std::endl;
 			if (deductStoreCredit(localPrice)) {
 				inventory.addProduct(product, product.getQuantity());
 				return;
@@ -75,7 +75,7 @@ void GroceryStore::receivePayment()
 	for (const auto& product : checkOut.getProducts())
 	{
 		//std::cout << "Receiving payment for: " << product.getName() << std::endl;
-		storeCredit += product.getPrice() * 1.1f * product.getQuantity();
+		storeCredit += product.getPrice() * resaleCostMultiplier * product.getQuantity();
 		checkOut.clear();
 		showCoin = true;
 		coinSound.playSound("kaching");
@@ -121,6 +121,16 @@ void GroceryStore::setUpgradeStockCost(float multiplier)
 float GroceryStore::getStockCostMultiplier() const
 {
 	return stockCostMultiplier;
+}
+
+void GroceryStore::setUpgradeResaleCost(float multiplier)
+{
+	resaleCostMultiplier = multiplier;
+}
+
+float GroceryStore::getResaleCostMultiplier() const
+{
+	return resaleCostMultiplier;
 }
 
 void GroceryStore::loadAnimation()

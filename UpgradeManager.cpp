@@ -18,7 +18,7 @@ bool UpgradeManager::loadUpgradesFromFile(const std::string& filename, Game& gam
 	file >> j;
 
 	for (const auto& item : j) {
-		std::cout << "Loading upgrade: " << item["name"] << "\n";
+		//std::cout << "Loading upgrade: " << item["name"] << "\n";
 		std::string name = item["name"];
 		float cost = item["cost"];
 		float effect = item["effect"];
@@ -26,20 +26,42 @@ bool UpgradeManager::loadUpgradesFromFile(const std::string& filename, Game& gam
 		float effectMultiplier = item["effectMultiplier"];
 
 		if (name == "Customer Speed Boost") {
-			std::cout << "Loaded upgrade: " << name << "\n";
+			//std::cout << "Loaded upgrade: " << name << "\n";
 			upgrades.emplace_back(name, cost, effect, costMultiplier, effectMultiplier,
 				[&game](float effect) {
-					std::cout << "Applying upgrade: " << effect << "\n";
-					std::cout << "Customers Get" << game.getCustomers().size() << "\n";
+					//std::cout << "Applying upgrade: " << effect << "\n";
+					//std::cout << "Customers Get" << game.getCustomers().size() << "\n";
 					game.setUpgradedMovementSpeed(effect);
 				});
 		}
 		if (name == "Cheaper Stock Cost") {
-			std::cout << "Loaded upgrade: " << name << "\n";
+			//std::cout << "Loaded upgrade: " << name << "\n";
 			upgrades.emplace_back(name, cost, effect, costMultiplier, effectMultiplier,
 				[&game](float effect) {
-					std::cout << "Applying upgrade: " << effect << "\n";
+					//std::cout << "Applying upgrade: " << effect << "\n";
 					game.getGroceryStore().setUpgradeStockCost(effect);
+				});
+		}
+		if (name == "Increase Resale Price") {
+			//std::cout << "Loaded upgrade: " << name << "\n";
+			upgrades.emplace_back(name, cost, effect, costMultiplier, effectMultiplier,
+				[&game](float effect) {
+					//std::cout << "Applying upgrade: " << effect << "\n";
+					game.getGroceryStore().setUpgradeResaleCost(effect);
+				});
+		}
+		if (name == "Increase Queue Size") {
+			//std::cout << "Loaded upgrade: " << name << "\n";
+			upgrades.emplace_back(name, cost, effect, costMultiplier, effectMultiplier,
+				[&game](float effect) {
+					game.setUpgradeQueueLimit();
+				});
+		}
+		if (name == "Auto Checkout") {
+			//std::cout << "Loaded upgrade: " << name << "\n";
+			upgrades.emplace_back(name, cost, effect, costMultiplier, effectMultiplier,
+				[&game, this](float effect) {
+					game.setUpgradeAutoCheckout();
 				});
 		}
 	}

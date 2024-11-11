@@ -7,16 +7,22 @@
 #include <array>
 #include <ctime>
 
-constexpr std::array<const char*, 5> stockNames = { "Apple", "Banana", "Carrot", "Corn", "Grape" };
-constexpr std::array<float, 5> stockPrices = { 1.0f, 0.9f, 1.5f, 2.0f, 4.0f };
+constexpr std::array<const char*, 13> stockNames = { "Apple", "Banana", "Carrot", "Corn", "Grape", "Kiwi", "Orange", "Peach", "Pear", "Pineapple", "Strawberry", "Watermelon", "(HD)Grade"};
 
-enum class stockType {
-	Apple,
-	Banana,
-	Carrot,
-	Corn,
-	Grape
-};
+//enum class stockType {
+//	Apple,
+//	Banana,
+//	Carrot,
+//	Corn,
+//	Grape,
+//	Kiwi,
+//	Orange,
+//	Peach,
+//	Pear,
+//	Pineapple,
+//	Strawberry,
+//	Watermelon
+//};
 
 Game::Game()
 	: window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "Grocery Store Game"),
@@ -27,14 +33,14 @@ Game::Game()
 	groceryStore.setPosition({0, WINDOW_HEIGHT - 65.0f});
 
 	stocks.loadConfig("stock_config.txt");
-	//groceryStore.buyStocks("Apple");
+	groceryStore.buyStocks("Apple");
 	//groceryStore.buyStocks("Banana");
 	//groceryStore.buyStocks("Carrot");
 	//groceryStore.buyStocks("Corn");
 	//groceryStore.buyStocks("Grape");
 
-	navBar.addButton("Stocks", [this]() { showStocks(); });
-	navBar.addButton("Store", [this]() { showStore(); });
+	navBar.addButton("Store", [this]() { showStocks(); });
+	navBar.addButton("Stocks", [this]() { showStore(); });
 	navBar.addButton("Payment", [this]() { showPayment(); });
 	navBar.addButton("Upgrades", [this]() { showUpgrades(); });
 
@@ -43,7 +49,7 @@ Game::Game()
 		std::cerr << "Failed to load upgrades from file.\n";
 	}
 	else {
-		std::cout << "Loaded upgrades from file.\n";
+		//std::cout << "Loaded upgrades from file.\n";
 	}
 
 	upgradesUI.createUpgradeButtons(upgradeManager, *this);
@@ -61,11 +67,7 @@ Game::Game()
 	initializeQueuePositions();
 
 	loadFonts("pixel.ttf");
-	randomCustomer();
-	//randomCustomer();
-	//randomCustomer();
-	//randomCustomer();
-	//randomCustomer();
+	//RandomSpawnLoop();
 }
 
 void Game::loadFonts(const std::string& fontPath) {
@@ -146,7 +148,7 @@ void Game::update(float deltaTime) {
 		}
 		case CustomerState::IdleInQueue: {
 			if (isCashierAvailable()) {
-				std::cout << "Cashier is available." << std::endl;
+				//std::cout << "Cashier is available." << std::endl;
 				processCustomerQueue();
 			}
 			break;
@@ -160,9 +162,9 @@ void Game::update(float deltaTime) {
 		}
 		case CustomerState::SendToCart: {
 			srand(static_cast<unsigned int>(time(0)));
-			int randomStock = rand() % 5;
-			int randomQuantity = rand() % 5 + 1;
-			if (customer->buyProduct(stockNames[randomStock], stockPrices[randomStock], randomQuantity, groceryStore.getInventory()))
+			int randomStock = rand() % 13;
+			int randomQuantity = rand() % 10 + 1;
+			if (customer->buyProduct(stockNames[randomStock], randomQuantity, groceryStore.getInventory()))
 			{
 				customer->sendToCart(groceryStore);
 				customer->setCustomerState(CustomerState::Idle);
@@ -200,6 +202,10 @@ void Game::update(float deltaTime) {
 
 	spawnTimer += deltaTime;
 	//RandomSpawnLoop();
+	if (currentCustomer && autoCheckout && currentCustomer->getCustomerState() == CustomerState::Idle) {
+		groceryStore.receivePayment();
+		afterPayment();
+	}
 }
 
 void Game::render() {
@@ -280,13 +286,13 @@ std::string Game::getStoreCreditString() const {
 }
 
 void Game::randomCustomer() {
-	if (customerQueue.size() >= 9) {
-		std::cout << "Queue is full." << std::endl;
+	if (customerQueue.size() >= QueueLimit) {
+		//std::cout << "Queue is full." << std::endl;
 		return;
 	}
 
 	auto customer = std::make_shared<Customer>("Customer " + std::to_string(customers.size()));
-	std::cout << "Customer " << customers.size() << " has been added." << std::endl;
+	//std::cout << "Customer " << customers.size() << " has been added." << std::endl;
 
 	customers.push_back(customer);
 	customerQueue.push_back(customer);  // Store shared pointer
@@ -294,7 +300,7 @@ void Game::randomCustomer() {
 	for (int i = 0; i < customerQueue.size(); ++i) {
 		if (customerQueue[i]->getName() == customer->getName())
 		{
-			std::cout << customer->getName() << " has entered the store." << std::endl;
+			//std::cout << customer->getName() << " has entered the store." << std::endl;
 			customer->setMovementSpeed(upgradedCustomerMovementSpeed);
 			customer->setPosition(sf::Vector2f(WINDOW_WIDTH, WINDOW_HEIGHT - 30));
 			customer->setTargetQueuePosition(queuePositions[i]);
@@ -307,7 +313,7 @@ void Game::randomCustomer() {
 void Game::afterPayment()
 {
 	if (currentCustomer) {
-		std::cout << "Payment received." << std::endl;
+		//std::cout << "Payment received." << std::endl;
 		currentCustomer->setTargetLeavePosition({ -50, WINDOW_HEIGHT - 30.f });
 		currentCustomer->moveTo({ - 50, WINDOW_HEIGHT - 30.f });
 		currentCustomer->setCustomerState(CustomerState::Leaving);
@@ -315,7 +321,7 @@ void Game::afterPayment()
 		customerGoingToCashier = nullptr;
 	}
 	else {
-		std::cout << "No payment received." << std::endl;
+		//std::cout << "No payment received." << std::endl;
 	}
 }
 
@@ -339,9 +345,26 @@ GroceryStore& Game::getGroceryStore()
 
 void Game::initializeQueuePositions()
 {
-	for (int i = 0; i < 10; ++i) {
+	queuePositions.clear();
+	for (int i = 0; i < QueueLimit; ++i) {
 		queuePositions.push_back({ 150.f + i * 48.f, WINDOW_HEIGHT - 30.f });
 	}
+}
+
+void Game::setUpgradeQueueLimit()
+{
+	QueueLimit++;
+	initializeQueuePositions();
+}
+
+void Game::setUpgradeAutoCheckout()
+{
+	autoCheckout = true;
+}
+
+bool Game::getAutoCheckout() const
+{
+	return autoCheckout;
 }
 
 bool Game::isCashierAvailable() const
@@ -355,10 +378,10 @@ bool Game::isCashierAvailable() const
 void Game::processCustomerQueue()
 {
 	if (customerQueue.empty()) {
-		std::cout << "No customers in queue." << std::endl;
+		//std::cout << "No customers in queue." << std::endl;
 		return;
 	}
-	std::cout << "Processing customer queue." << std::endl;
+	//std::cout << "Processing customer queue." << std::endl;
 	auto customer = customerQueue.front();
 	customerQueue.erase(customerQueue.begin());
 	customerGoingToCashier = customer;
@@ -381,9 +404,9 @@ void Game::RandomSpawnLoop()
 {
 	if (spawnTimer >= spawnInterval)
 	{
-		int randomChance = rand() % 100;
+		int randomChance = rand() % 1;
 		if (randomChance <= 50) {
-			if (customerQueue.size() < 10) {
+			if (customerQueue.size() < QueueLimit) {
 				randomCustomer();
 			}
 		}
