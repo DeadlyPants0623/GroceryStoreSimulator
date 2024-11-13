@@ -61,7 +61,7 @@ private:
     //Queue
 	std::vector<sf::Vector2f> queuePositions;
 	void initializeQueuePositions();
-	int QueueLimit = 10;
+	int QueueLimit = 1;
 
 	bool isCashierAvailable() const;
 
@@ -71,7 +71,7 @@ private:
     void RandomSpawnLoop();
     void setProgress(float progress);
     float spawnTimer;
-    float spawnInterval = .1f;
+    float spawnInterval = 1.0f;
 	Sound buttonClick;
 
 	// Patience Progress Bar

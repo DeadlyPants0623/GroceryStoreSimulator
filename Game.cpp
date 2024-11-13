@@ -201,7 +201,7 @@ void Game::update(float deltaTime) {
 		customers.end());
 
 	spawnTimer += deltaTime;
-	//RandomSpawnLoop();
+	RandomSpawnLoop();
 	if (currentCustomer && autoCheckout && currentCustomer->getCustomerState() == CustomerState::Idle) {
 		groceryStore.receivePayment();
 		afterPayment();
@@ -404,7 +404,7 @@ void Game::RandomSpawnLoop()
 {
 	if (spawnTimer >= spawnInterval)
 	{
-		int randomChance = rand() % 1;
+		int randomChance = rand() % 100;
 		if (randomChance <= 50) {
 			if (customerQueue.size() < QueueLimit) {
 				randomCustomer();
